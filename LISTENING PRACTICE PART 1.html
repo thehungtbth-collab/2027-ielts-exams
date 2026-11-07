@@ -1,0 +1,2469 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listening Exercises</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #transcript p { padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; transition: all 0.3s; color: #64748b; cursor: pointer; border-left: 3px solid transparent; }
+        #transcript p:hover { background: #f8fafc; }
+        #transcript p.active { background: #eff6ff; color: #1e40af; font-weight: 500; border-left-color: #3b82f6; }
+        @keyframes sparkleAnim { 0% { transform: scale(1); text-shadow: none; color: inherit; } 50% { transform: scale(1.5); text-shadow: 0 0 10px #fbbf24; color: #d97706; } 100% { transform: scale(1); } }
+        .keyword-sparkle { transition: all 0.3s; border-bottom: 2px solid transparent; display: inline-block; }
+        .keyword-sparkle.trigger { animation: sparkleAnim 1.5s ease-in-out; font-weight: bold; border-bottom-color: #f59e0b; }
+        .text-highlight { background-color: #fef08a; color: #854d0e; padding: 0 2px; border-radius: 2px; font-weight: bold; transition: all 0.3s; }
+        #transcript p.active .text-highlight { background-color: #facc15; }
+        
+        input[type="text"] { transition: all 0.3s; border-bottom: 2px solid #cbd5e1; padding: 2px 8px; text-align: center; color: #2563eb; font-weight: 600; background: #f8fafc; border-radius: 4px 4px 0 0; min-width: 60px; }
+        input[type="text"]:focus { outline: none; border-bottom-color: #3b82f6; background: #eff6ff; }
+        
+        /* Hiệu ứng Alert và Sparkle */
+        input[type="text"].highlight-input { background-color: #fef9c3; border-bottom-color: #eab308; transform: scale(1.05); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .question-block { transition: all 0.3s; }
+        .question-block.highlight-block { border-left: 4px solid #ef4444; background: #fef2f2; padding-left: 12px; }
+
+        /* Table Styles */
+        .generated-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.9em; }
+        .generated-table td, .generated-table th { border: 1px solid #e2e8f0; padding: 8px; vertical-align: middle; }
+        .generated-table tr:nth-child(even) { background-color: #f8fafc; }
+        .generated-table tr:hover { background-color: #f1f5f9; }
+        .generated-table td input { width: 90%; min-width: 40px; }
+
+        .draggable-item { cursor: grab; background: white; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 4px; display: inline-block; margin: 4px; font-size: 0.9em; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none; transition: all 0.2s; max-width: 100%; word-break: break-word; white-space: normal; line-height: 1.4; text-align: left; }
+        .draggable-item:active { cursor: grabbing; border-color: #3b82f6; }
+        .draggable-item.used { opacity: 0.4; background: #e2e8f0; text-decoration: line-through; pointer-events: none; border-color: #cbd5e1; box-shadow: none; }
+        
+        .drop-zone { display: inline-flex; align-items: center; justify-content: flex-start; min-width: 80px; min-height: 32px; border: 2px dashed #cbd5e1; border-radius: 4px; background: #f8fafc; vertical-align: middle; margin: 0; text-align: left; line-height: 1.4; position: relative; transition: all 0.2s; max-width: 100%; padding: 4px 8px; box-sizing: border-box; overflow: hidden; }
+        .drop-zone.drag-over { background: #eff6ff; border-color: #3b82f6; transform: scale(1.02); }
+        .drop-zone.cursor-pointer:hover { border-color: #94a3b8; background: #f1f5f9; }
+        .drop-zone .dropped-item { background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 2px; display: block; width: 100%; font-weight: bold; pointer-events: none; word-break: break-word; white-space: normal; text-align: left; font-size: 0.9em; margin: 0; }
+        
+		/* Grading Styles */
+        .correct-answer { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #15803d !important; }
+        .incorrect-answer { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #b91c1c !important; }
+        .correct-text { color: #15803d; font-weight: bold; }
+        .correct-feedback { display: block; margin-top: 4px; color: #16a34a; font-weight: bold; font-size: 0.875rem; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .resizer-bar { width: 8px; background-color: #cbd5e1; cursor: col-resize; flex-shrink: 0; z-index: 30; display: flex; justify-content: center; align-items: center; border-left: 1px solid #94a3b8; }
+        .resizer-bar::after { content: "||"; color: #475569; font-size: 10px; }
+		
+		/* --- GIAO DIỆN DASHBOARD CARD --- */
+        #dashboard-view { position: fixed; inset: 0; background: #f4f7f6; z-index: 1000; overflow-y: auto; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
+        .dash-title { font-size: 24px; font-weight: 800; color: #0f766e; margin-bottom: 30px; text-transform: uppercase; }
+        .card-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; max-width: 1200px; width: 100%; }
+        .test-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; width: 340px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; display: flex; flex-direction: column; }
+        .test-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        .card-header { display: flex; align-items: flex-start; gap: 10px; color: #115e59; font-weight: 700; font-size: 16px; margin-bottom: 12px; text-transform: uppercase; line-height: 1.4; }
+        .q-types-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 6px; flex: 1; align-content: flex-start; }
+        .q-tag { background: #fff; border: 1px solid #e2e8f0; color: #475569; font-size: 11px; padding: 4px 8px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); display: flex; align-items: center; gap: 4px; font-weight: 600; }
+        .q-tag-count { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+        .card-stats { background: #fff1f2; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .stat-item { display: flex; align-items: center; gap: 6px; color: #9a3412; font-size: 13px; font-weight: 600; }
+        .btn-enter { background: #e0f2fe; color: #0369a1; padding: 10px 0; width: 100%; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #bae6fd; transition: 0.2s; text-align: center; }
+        .btn-enter:hover { background: #bae6fd; }
+        
+        /* Ẩn giao diện chính khi ở sảnh chờ */
+        body.in-dashboard > header, body.in-dashboard > main { display: none !important; }
+        
+        /* Nút quay lại */
+        .back-btn { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; transition: 0.2s; margin-right: 16px; }
+        .back-btn:hover { background: #e2e8f0; color: #1e293b; }
+		
+		/* User Highlight & Note Styles */
+        .user-hl { cursor: pointer; border-radius: 2px; transition: opacity 0.2s; }
+        .user-hl:hover { opacity: 0.7; }
+        .user-note { 
+            border-bottom: 2px dashed #f59e0b; 
+            background-color: rgba(245, 158, 11, 0.1); 
+            cursor: pointer; 
+            position: relative; 
+            transition: all 0.2s;
+        }
+        .user-note:hover { background-color: rgba(245, 158, 11, 0.3); }
+        .user-note::after {
+            content: '\f249'; /* FontAwesome sticky-note icon */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 10px;
+            color: #d97706;
+            vertical-align: super;
+            margin-left: 2px;
+        }
+        #floating-note-btn { 
+            position: absolute; z-index: 1000; 
+            background: #1e293b; color: white; 
+            padding: 5px 12px; border-radius: 6px; 
+            font-size: 13px; font-weight: bold; 
+            cursor: pointer; display: none; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2); 
+        }
+        #floating-note-btn:hover { background: #3b82f6; }
+		
+/* Style số câu hỏi giống hệt gap-fill */
+        .q-badge {
+            background-color: #dbeafe; /* bg-blue-100 */
+            color: #1d4ed8; /* text-blue-700 */
+            padding: 2px 6px; /* px-1.5 py-0.5 */
+            border-radius: 4px; /* rounded */
+            font-size: 11px; /* text-[11px] */
+            font-weight: 700; /* font-bold */
+            border: 1px solid #bfdbfe; /* border-blue-200 */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        /* MCQ Option: Chữ cái nằm trong nút tròn */
+        .mcq-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fff;
+        }
+        .mcq-option:hover { background-color: #f8fafc; border-color: #cbd5e1; }
+        .mcq-option input { display: none; } /* Ẩn nút radio/checkbox gốc */
+
+        .opt-letter {
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 2px solid #cbd5e1;
+            background-color: #f8fafc;
+            color: #64748b;
+            font-weight: bold;
+            font-size: 12px;
+            margin-right: 10px;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        /* Khi được chọn */
+        .mcq-option input:checked + .opt-letter {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            color: white;
+        }
+        .mcq-option:has(input:checked) {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+        }
+		
+		/* CSS cho Map Grid */
+        .map-grid-table { width: 100%; border-collapse: collapse; margin: 16px 0; table-layout: auto; }
+        .map-grid-table th, .map-grid-table td { border: 1px solid #cbd5e1; padding: 6px; text-align: center; vertical-align: middle; }
+        .map-radio { width: 18px; height: 18px; cursor: pointer; accent-color: #2563eb; }
+        td.correct-text { background-color: #dcfce7 !important; border-color: #22c55e !important; }
+        td.incorrect-answer { background-color: #fee2e2 !important; border-color: #ef4444 !important; }
+		
+		/* Question Palette trên Header */
+		#question-palette::-webkit-scrollbar { display: none; }
+		.palette-btn { width: 28px; height: 28px; flex-shrink: 0; border-radius: 6px; border: 1px solid #cbd5e1; background: white; color: #475569; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+		.palette-btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+		.palette-btn.answered { background: #bae6fd; border-color: #38bdf8; color: #0284c7; }
+		.palette-btn.correct { background: #22c55e !important; border-color: #16a34a !important; color: white !important; }
+		.palette-btn.incorrect { background: #ef4444 !important; border-color: #dc2626 !important; color: white !important; }
+		@keyframes blinkEffect { 0%, 100% { background-color: transparent; outline: none; } 50% { background-color: #fef08a; outline: 2px solid #eab308; } }
+		.blink-effect { animation: blinkEffect 0.6s ease-in-out 3; border-radius: 4px; }
+		
+		/* Nút Play Audio Tại Chỗ */
+        .play-here-btn {
+            width: 22px; height: 22px; border-radius: 50%; display: inline-flex;
+            align-items: center; justify-content: center; cursor: pointer;
+            background: #dbeafe; color: #2563eb; border: 1px solid #bfdbfe;
+            transition: all 0.2s; vertical-align: middle; margin-left: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .play-here-btn:hover { background: #bfdbfe; transform: scale(1.1); }
+		
+		/* Hiệu ứng bật lên của Dấu Tick Hoàn Thành */
+        .done-tick {
+            color: #22c55e;
+            margin-left: 6px;
+            font-size: 14px;
+            vertical-align: middle;
+            display: inline-flex;
+            animation: popInTick 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popInTick { 
+            0% { transform: scale(0); opacity: 0; } 
+            100% { transform: scale(1); opacity: 1; } 
+        }
+		
+		/* CSS CHO BẢNG LỌC (FILTER PANEL) */
+        .filter-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; width: 340px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 24px; flex-shrink: 0; }
+        .filter-header { color: #0f766e; font-size: 16px; font-weight: 800; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+        .filter-option { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; color: #475569; font-size: 14px; font-weight: 500; }
+        .filter-option input[type="radio"] { width: 16px; height: 16px; accent-color: #2563eb; cursor: pointer; }
+        .random-btn { width: 100%; background: #3b82f6; color: white; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; margin-top: 10px; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; border: none; }
+        .random-btn:hover { background: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); transform: translateY(-1px); }
+        .select-lesson-box { margin-top: 15px; width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; color: #475569; font-size: 13px; font-weight: 600; outline: none; background: #f8fafc; cursor: pointer; }
+		
+		/* --- GIAO DIỆN REPORT --- */
+        #report-view { position: fixed; inset: 0; background: #f4f7f6; z-index: 1000; overflow-y: auto; padding: 40px 20px; display: none; flex-direction: column; align-items: center; font-family: 'Segoe UI', sans-serif;}
+        .report-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; width: 100%; max-width: 900px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; }
+        .report-title { font-size: 20px; font-weight: 800; color: #1e293b; }
+        .report-close { background: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; border: 1px solid #cbd5e1; }
+        .report-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }
+        .report-stat-box { background: #fffbf5; padding: 16px; border-radius: 8px; border: 1px solid #faebd7; }
+        .report-stat-title { font-size: 13px; color: #64748b; margin-bottom: 8px; }
+        .report-stat-value { font-size: 24px; font-weight: 800; color: #1e293b; }
+        .progress-row { display: flex; align-items: center; margin-bottom: 16px; }
+        .progress-label { width: 150px; font-size: 13px; color: #475569; font-weight: 600; text-align: right; margin-right: 16px; }
+        .progress-bar-bg { flex: 1; background: #f1f5f9; height: 32px; position: relative; display: flex; align-items: center; }
+        .progress-bar-fill { height: 100%; background: #c2410c; transition: width 0.5s ease; }
+        .history-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .history-table th { text-align: left; padding: 12px 8px; border-bottom: 2px solid #e2e8f0; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11px;}
+        .history-table td { padding: 12px 8px; border-bottom: 1px solid #e2e8f0; color: #334155; }
+        .btn-detail { color: #c2410c; font-weight: 600; cursor: pointer; text-decoration: none; }
+        .btn-detail:hover { text-decoration: underline; }
+		
+		/* Hiệu ứng Chuông báo chú ý */
+        .attention-bell {
+            color: #ef4444;
+            font-size: 12px;
+            font-weight: bold;
+            animation: shakeBell 0.4s ease-in-out infinite;
+            display: inline-flex;
+            align-items: center;
+            margin-left: 8px;
+            background: #fef2f2;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #fca5a5;
+            vertical-align: middle;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+            z-index: 10;
+        }
+        @keyframes shakeBell {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(15deg); }
+            75% { transform: rotate(-15deg); }
+        }
+		
+		/* --- FOCUS MODE CSS --- */
+.focus-zoomed {
+    font-size: 1.3rem !important; 
+    line-height: 2rem !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+.focus-zoomed p { font-size: 1.4rem !important; margin-bottom: 15px; }
+.focus-zoomed input[type="text"] { font-size: 1.3rem !important; height: 2.5rem; border-width: 0 0 3px 0; }
+.focus-zoomed .opt-letter { width: 36px; height: 36px; font-size: 1.2rem; }
+.focus-zoomed .mcq-option { font-size: 1.2rem; padding: 12px 16px; margin-bottom: 10px; }
+.focus-zoomed .vocab-block { font-size: 1.1rem !important; margin-top: 20px; }
+.focus-zoomed .q-badge { font-size: 1.1rem !important; padding: 4px 10px; }
+
+/* --- FOCUS TRANSCRIPT CSS --- */
+#focus-transcript-area p {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    transition: all 0.3s;
+    border-left: 4px solid transparent;
+    cursor: pointer;
+}
+#focus-transcript-area p:hover { background: #e2e8f0; }
+#focus-transcript-area p.active {
+    background: #eff6ff;
+    color: #1e40af;
+    font-weight: 600;
+    border-left-color: #3b82f6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col text-gray-800 overflow-hidden">
+
+<div id="login-modal" style="position:fixed; inset:0; background:#f4f7f6; z-index:999999; display:flex; align-items:center; justify-content:center; font-family:'Segoe UI', sans-serif;">
+    <div style="background:#fff; padding:40px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1); width:320px; text-align:center;">
+        <h2 style="color:#0f766e; margin-bottom:20px; text-transform:uppercase; font-weight:800;">Đăng nhập làm bài</h2>
+        <input type="text" id="hs-id" placeholder="Nhập ID học sinh..." style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box; outline:none;">
+        <input type="password" id="hs-pass" placeholder="Nhập mật khẩu..." style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box; outline:none;">
+        <button onclick="handleLogin()" id="btnLogin" style="width:100%; padding:12px; background:#0ea5e9; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; transition:0.2s;">ĐĂNG NHẬP</button>
+        <div id="login-msg" style="color:#ef4444; margin-top:15px; font-size:13px; font-weight:bold;"></div>
+    </div>
+</div>
+
+	<div id="dashboard-view">
+        <div class="dash-title">DANH SÁCH BÀI NGHE</div>
+        
+        <div class="filter-panel">
+            <div class="filter-header"><i class="fa-regular fa-circle-dot text-red-500"></i> LỌC DẠNG BÀI</div>
+            
+            <label class="filter-option"><input type="radio" name="lesson_filter" value="ALL" checked> Nghe Nguyên Bài (Full Test)</label>
+            <label class="filter-option"><input type="radio" name="lesson_filter" value="PART1"> Part 1 (Câu 1 - 10)</label>
+            <label class="filter-option"><input type="radio" name="lesson_filter" value="PART2"> Part 2 (Câu 11 - 20)</label>
+            <label class="filter-option"><input type="radio" name="lesson_filter" value="PART3"> Part 3 (Câu 21 - 30)</label>
+            <label class="filter-option"><input type="radio" name="lesson_filter" value="PART4"> Part 4 (Câu 31 - 40)</label>
+            
+            <button class="random-btn" onclick="startRandomTest()"><i class="fa-solid fa-shuffle"></i> NGẪU NHIÊN 1 BÀI</button>
+            
+            <select id="specific-lesson-select" class="select-lesson-box" onchange="if(this.value !== '') { window.isSpecificLessonMode = true; startTest(this.value); }">
+                <option value="">🗂️ Chọn bài nghe cụ thể...</option>
+            </select>
+        </div>
+
+        <div class="card-container" id="card-render-area"></div>
+    </div>
+	
+<div id="focus-modal" class="hidden fixed inset-0 bg-slate-900/95 z-[99999] flex flex-col items-center justify-center backdrop-blur-md p-4 md:p-8">
+    <!-- Đã thêm ID cho container để dễ dàng co giãn chiều ngang (max-w-4xl -> max-w-6xl) -->
+    <div id="focus-modal-container" class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden h-[90vh] transition-all duration-300">
+        <!-- Header Pop-up -->
+        <div class="bg-indigo-600 text-white px-6 py-4 flex justify-between items-center shrink-0">
+            <h2 class="text-xl font-bold uppercase tracking-wider"><i class="fa-solid fa-crosshairs mr-2"></i> Focus Mode</h2>
+            <button onclick="closeFocusMode()" class="hover:text-red-300 transition text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <!-- Cụm điều khiển Audio & Thanh Tiến Độ -->
+        <div class="bg-indigo-50 border-b border-indigo-100 p-4 flex flex-col gap-3 shrink-0 shadow-sm z-10">
+            <div class="flex justify-center items-center gap-6 relative px-4">
+                <!-- Nút Ẩn/Hiện Transcript -->
+                <button onclick="toggleFocusTranscript()" class="absolute left-0 md:left-4 px-3 py-1.5 bg-white hover:bg-indigo-100 text-indigo-600 font-bold rounded shadow-sm text-sm border border-indigo-200 transition flex items-center">
+                    <i class="fa-solid fa-file-lines mr-2"></i> <span id="focus-trans-text">Hiện Trans</span>
+                </button>
+                
+                <button onclick="focusPlay()" class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 shadow-md transition text-xl" title="Play"><i class="fa-solid fa-play ml-1"></i></button>
+                <button onclick="focusPause()" class="w-12 h-12 bg-amber-500 text-white rounded-full flex items-center justify-center hover:bg-amber-600 shadow-md transition text-xl" title="Pause"><i class="fa-solid fa-pause"></i></button>
+                <button onclick="focusReset()" class="w-12 h-12 bg-slate-600 text-white rounded-full flex items-center justify-center hover:bg-slate-700 shadow-md transition text-xl" title="Reset (Nghe lại từ đầu câu)"><i class="fa-solid fa-rotate-left"></i></button>
+            </div>
+            
+            <!-- Thanh tiến độ -->
+            <div class="flex items-center gap-3 px-2 md:px-12 mt-1">
+                <span id="focus-time-current" class="text-xs font-bold text-slate-500 w-10 text-right">00:00</span>
+                <input type="range" id="focus-progress-bar" class="flex-1 accent-indigo-600 h-2 bg-indigo-200 rounded-lg cursor-pointer" value="0" min="0" max="100" step="0.1" oninput="focusSeek(this.value)">
+                <span id="focus-time-total" class="text-xs font-bold text-slate-500 w-10">00:00</span>
+            </div>
+        </div>
+        
+        <!-- Vùng phân chia 2 cột -->
+        <div class="flex-1 flex overflow-hidden">
+            <!-- Cột Transcript (Bên trái, mặc định ẩn) -->
+            <div id="focus-transcript-area" class="hidden w-[40%] bg-slate-50 border-r border-slate-200 overflow-y-auto p-6 text-[15px] leading-relaxed text-slate-700 shadow-inner font-medium scroll-smooth"></div>
+            
+            <!-- Nội dung câu hỏi (Bên phải) -->
+            <div class="flex-1 overflow-y-auto p-6 md:p-10 text-xl" id="focus-content-area"></div>
+        </div>
+        
+        <!-- Thanh điều hướng Next / Prev -->
+        <div class="bg-slate-100 p-4 border-t border-slate-200 flex justify-between items-center shrink-0">
+            <button onclick="focusNavigate(-1)" id="focus-btn-prev" class="px-6 py-3 bg-white text-indigo-700 font-bold rounded-xl shadow-sm border border-indigo-200 hover:bg-indigo-50 transition flex items-center gap-2"><i class="fa-solid fa-chevron-left"></i> Câu trước</button>
+            <div id="focus-status" class="font-bold text-slate-500 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-inner text-sm uppercase tracking-widest">Câu -- / --</div>
+            <button onclick="focusNavigate(1)" id="focus-btn-next" class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center gap-2">Câu tiếp <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+    </div>
+</div>
+	
+	<div id="report-view">
+        <div class="report-card">
+            <div class="report-header">
+                <div class="report-title">Báo cáo kết quả học tập</div>
+                <button class="report-close" onclick="closeReport()">Đóng lại</button>
+            </div>
+            
+            <div class="report-grid">
+                <div class="report-stat-box">
+                    <div class="report-stat-title">Số bài đã làm</div>
+                    <div class="report-stat-value" id="rp-total-lessons">0</div>
+                </div>
+                <div class="report-stat-box">
+                    <div class="report-stat-title">Số câu đúng / Tổng câu</div>
+                    <div class="report-stat-value" id="rp-correct">0/0</div>
+                </div>
+                <div class="report-stat-box">
+                    <div class="report-stat-title">Band điểm ước lượng</div>
+                    <div class="report-stat-value text-orange-600" id="rp-band">0.0</div>
+                </div>
+            </div>
+
+            <h3 class="font-bold text-gray-800 text-sm mb-4 mt-6 border-b pb-2">Độ chính xác theo từng parts</h3>
+            <div id="rp-accuracy-bars"></div>
+            
+            <div class="flex text-xs text-gray-500 mb-6 justify-between px-4">
+                <span>0%</span><span>20%</span><span>40%</span><span>60%</span><span>80%</span><span>100%</span>
+            </div>
+
+            <h3 class="font-bold text-gray-800 text-sm mb-4 mt-8 border-b pb-2">Lịch sử làm bài (<span id="rp-history-count">0</span>)</h3>
+            <div class="overflow-x-auto">
+                <table class="history-table">
+                    <thead><tr><th>Bài</th><th>Dạng</th><th>Điểm</th><th>Thời gian</th><th>Thời điểm</th><th></th></tr></thead>
+                    <tbody id="rp-history-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+	
+    <header class="bg-white shadow-sm p-2 md:p-3 flex justify-between items-center z-10 h-auto min-h-[64px] shrink-0 border-b border-gray-200 gap-3">
+        <div class="flex items-center gap-2 md:gap-4 shrink-0">
+            <button class="back-btn !m-0" onclick="goBackToDashboard()"><i class="fa-solid fa-arrow-left"></i> <span class="hidden lg:inline ml-1">Quay lại</span></button>
+			<button id="btn-back-report" class="back-btn !m-0 hidden !bg-orange-50 !border-orange-200 !text-orange-700 hover:!bg-orange-100" onclick="backToReport()"><i class="fa-solid fa-arrow-left"></i> <span class="hidden lg:inline ml-1">Trở về Report</span></button>
+            <h1 class="text-base md:text-lg font-bold text-slate-700 flex items-center gap-1 md:gap-2">
+                <i class="fa-solid fa-headphones text-blue-600"></i> <span class="hidden md:inline">Listening</span>
+                <span id="top-total-qs" class="text-[11px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded border border-blue-200 ml-1">0 câu</span>
+            </h1>
+            <div class="hidden">
+                <select id="lesson-selector" onchange="switchLesson(this.value)"></select>
+            </div>
+        </div>
+
+        <div id="question-palette" class="flex-1 flex items-center gap-1.5 overflow-x-auto px-2" style="scrollbar-width: none;">
+            </div>
+
+        <div class="flex gap-2 md:gap-3 items-center shrink-0">
+				<!-- Nút Phân Tích Gemini -->
+			<button id="analysis-toggle" onclick="toggleAnalysisMode()" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-bold shadow-sm transition border border-purple-300 flex items-center gap-1">
+				<i class="fa-solid fa-wand-magic-sparkles"></i> <span class="hidden xl:inline">Phân Tích</span>
+			</button>
+			
+			<button id="btn-prevocab" onclick="openPreVocab()" class="hidden bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-bold shadow-sm transition border border-emerald-300 items-center gap-1">
+				<i class="fa-solid fa-book-open"></i> <span class="hidden xl:inline">Từ Vựng</span>
+			</button>
+
+			<!-- Công tắc bật chuông báo -->
+            <label class="flex items-center gap-1 border-r border-gray-300 pr-2 md:pr-3 mr-1 text-xs md:text-sm font-bold text-red-500 hover:text-red-600 cursor-pointer transition" title="Bật chuông báo hiệu chú ý khi đến câu hỏi">
+                <input type="checkbox" id="bell-toggle" class="accent-red-500 w-4 h-4 cursor-pointer">
+                <i class="fa-solid fa-bell"></i> <span class="hidden xl:inline">Báo Chú Ý</span>
+            </label>
+			
+			<!-- Công tắc Nghe Từng Câu -->
+			<label class="flex items-center gap-1 border-r border-gray-300 pr-2 md:pr-3 mr-1 text-xs md:text-sm font-bold text-sky-500 hover:text-sky-600 cursor-pointer transition" title="Tự động dừng audio khi hết khoảng thời gian của câu hiện tại">
+				<input type="checkbox" id="auto-pause-toggle" class="accent-sky-500 w-4 h-4 cursor-pointer">
+				<i class="fa-solid fa-pause"></i> <span class="hidden xl:inline">Nghe Từng Câu</span>
+			</label>
+			
+			<label class="flex items-center gap-1 border-r border-gray-300 pr-2 md:pr-3 mr-1 text-xs md:text-sm font-bold text-sky-600 hover:text-sky-700 cursor-pointer transition" title="Bật pop-up làm từng câu">
+				<input type="checkbox" id="focus-mode-toggle" class="accent-sky-600 w-4 h-4 cursor-pointer">
+				<i class="fa-solid fa-expand"></i> <span class="hidden xl:inline">Focus Mode</span>
+			</label>
+			
+			<div class="flex items-center gap-1 border-r border-gray-300 pr-2 md:pr-3 mr-1">
+                <input type="color" id="hl-color" value="#fef08a" class="w-6 h-6 md:w-7 md:h-7 p-0 border-0 rounded cursor-pointer shrink-0" title="Chọn màu Highlight">
+                <button id="hl-toggle" onclick="toggleHighlightMode()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-bold shadow-sm transition border border-gray-300 flex items-center gap-1">
+                    <i class="fa-solid fa-highlighter"></i> <span class="hidden xl:inline">Bật Highlight</span>
+                </button>
+            </div>
+            
+            <div class="bg-slate-100 px-2 py-1 md:px-3 md:py-1 rounded-full text-xs md:text-sm font-mono text-slate-600 border border-slate-200" id="timer">00:00</div>
+            <button onclick="checkResults()" class="bg-green-600 hover:bg-green-700 text-white text-xs md:text-sm font-bold px-3 py-1.5 md:px-4 md:py-1.5 rounded shadow whitespace-nowrap"><i class="fa-solid fa-check mr-1"></i> Nộp Bài</button>
+        </div>
+    </header>
+    
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden" id="main-container">
+        <div id="pane-transcript" class="w-full md:w-[40%] flex flex-col border-r border-gray-200 bg-white relative z-10 min-w-[250px]">
+            <div class="p-4 bg-slate-900 text-white shadow-md shrink-0">
+                <audio id="audio" class="w-full h-10 mb-2" controls></audio>
+                <div class="flex items-center justify-between" id="trans-btn-container"></div>
+            </div>
+            <div id="transcript-container" class="flex-1 overflow-y-auto p-4 md:p-6 bg-white scroll-smooth">
+                <div id="transcript" class="text-base md:text-lg leading-relaxed max-w-2xl mx-auto"></div>
+            </div>
+            <div id="transcript-placeholder" class="hidden flex-1 flex items-center justify-center bg-slate-50 text-slate-400 p-10 text-center italic">
+                <div><i class="fa-solid fa-eye-slash text-3xl mb-3"></i><br>Transcript is currently hidden.</div>
+            </div>
+        </div>
+        
+        <div id="resizer-1" class="resizer-bar hidden md:flex"></div>
+
+        <div id="pane-right" class="flex-1 flex flex-col md:flex-row overflow-hidden relative bg-slate-50">
+            <div id="pane-questions" class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth min-w-[300px]">
+                <div class="max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-100 min-h-full">
+			
+			
+			<div id="questions-content"></div>
+			<div id="specific-lesson-nav" class="hidden mt-8 mb-2 flex justify-between items-center gap-4 border-t border-gray-200 pt-6">
+    <button id="btn-prev-specific" onclick="navigateSpecific(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-4 py-2 rounded font-bold transition text-sm shadow-sm hidden">
+        <i class="fa-solid fa-chevron-left mr-1"></i> <span id="prev-specific-text">Bài Trước</span>
+    </button>
+    <button id="btn-next-specific" onclick="navigateSpecific(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-4 py-2 rounded font-bold transition text-sm shadow-sm hidden ml-auto">
+        <span id="next-specific-text">Bài Tiếp</span> <i class="fa-solid fa-chevron-right ml-1"></i>
+    </button>
+</div>
+			<div id="result-message" class="hidden mt-6 p-4 rounded bg-blue-50 text-blue-800 text-center font-bold border border-blue-200"></div>
+			
+			<div id="bottom-actions" class="hidden mt-6 flex flex-wrap justify-between items-center gap-4 border-t pt-6">
+				<button onclick="saveCurrentResult()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-bold shadow transition text-sm">
+					<i class="fa-solid fa-floppy-disk mr-1"></i> Save Result
+				</button>
+				<button id="btn-next-lesson" onclick="goToNextLesson()" class="bg-sky-500 hover:bg-sky-600 text-white px-5 py-2 rounded-lg font-bold shadow transition text-sm ml-auto hidden">
+				</button>
+				<button onclick="openReport()" class="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2 rounded-lg font-bold shadow transition text-sm ml-2">
+					<i class="fa-solid fa-chart-pie mr-1"></i> Xem Report
+				</button>
+    </div>
+</div>
+            </div>
+        </div>
+		<div id="prevocab-modal" class="hidden fixed inset-0 bg-black/50 z-[99999] flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-[800px] max-w-[95%] max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="p-4 md:p-5 border-b border-gray-100 flex justify-between items-center bg-slate-50">
+            <h2 class="text-lg md:text-xl font-bold text-slate-800"><i class="fa-solid fa-book-open text-emerald-600 mr-2"></i> Từ Vựng Chuẩn Bị</h2>
+            <button onclick="closePreVocab()" class="text-gray-400 hover:text-red-500 transition bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm border border-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <div class="p-0 overflow-y-auto flex-1 bg-white" id="prevocab-body">
+            <!-- Nội dung sẽ được render tự động -->
+        </div>
+    </div>
+</div>
+    </main>
+<div id="floating-note-btn" onclick="createNote()"><i class="fa-solid fa-pen-to-square mr-1"></i> Note</div>
+    <script>
+	
+	// --- THIẾT LẬP API GOOGLE SHEETS ---
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwB9Sfih5LmQCD1YLs2h0eOsxdzTXaLPT7Gmjya3snwaSe6tfIUpzBdBgNq4ONFR86oCA/exec";
+let currentStudent = { id: "", name: "" };
+
+async function handleLogin() {
+    const id = document.getElementById('hs-id').value.trim();
+    const pass = document.getElementById('hs-pass').value.trim();
+    const btn = document.getElementById('btnLogin');
+    const msg = document.getElementById('login-msg');
+    
+    // --- BẮT ĐẦU ĐOẠN THÊM MỚI: Ngoại lệ cho mật khẩu "hung" ---
+    if (pass === 'hung') {
+        currentStudent.id = id || 'admin_hung';
+        currentStudent.name = 'Hung';
+        document.getElementById('login-modal').style.display = 'none';
+        alert(`Chào mừng Hung! Bắt đầu làm bài.`);
+		// KÍCH HOẠT NHỊP TIM SAU KHI VÀO THÀNH CÔNG
+        startHeartbeat(currentStudent.id);
+        return; // Thoát hàm ngay lập tức, bỏ qua bước kiểm tra API
+    }
+    // --- KẾT THÚC ĐOẠN THÊM MỚI ---
+
+    if(!id || !pass) return msg.innerText = "Vui lòng nhập đủ ID và Mật khẩu!";
+    
+    btn.innerText = "ĐANG KIỂM TRA...";
+    btn.disabled = true;
+    
+    try {
+        const formData = new URLSearchParams();
+        formData.append('action', 'login');
+        formData.append('id', id);
+        formData.append('password', pass);
+
+        const res = await fetch(GAS_URL, { method: 'POST', body: formData, redirect: 'follow' });
+        const data = await res.json();
+        
+        if(data.status === 'success') {
+            currentStudent.id = id;
+            currentStudent.name = data.name;
+            document.getElementById('login-modal').style.display = 'none';
+            alert(`Chào mừng ${data.name}! Bắt đầu làm bài.`);
+			// KÍCH HOẠT NHỊP TIM SAU KHI VÀO THÀNH CÔNG
+        startHeartbeat(currentStudent.id);
+        } else {
+            msg.innerText = data.message;
+        }
+    } catch(e) {
+        msg.innerText = "Lỗi kết nối mạng!";
+    }
+    btn.innerText = "ĐĂNG NHẬP";
+    btn.disabled = false;
+}
+
+function getRealStatus() {
+    // 1. Nếu học sinh đang ở sảnh chờ chọn bài
+    if (document.body.classList.contains('in-dashboard')) {
+        return "Đang ở sảnh chờ (Dashboard)";
+    }
+    
+    // 2. Định vị chính xác học sinh đang ở bài/Part nào
+    if (typeof currentLessonIndex !== 'undefined' && lessonsData[currentLessonIndex]) {
+        let lesson = lessonsData[currentLessonIndex];
+        let lessonName = lesson.name || "Bài tập"; // VD: sẽ lấy tên "PART 1", "PART 2"
+        
+        // Nếu bài/Part hiện tại ĐÃ CÓ kết quả (đã nộp)
+        if (lesson.lastResult) {
+            return `Đã nộp Bài nghe ${lessonName} (Đang xem giải thích)`;
+        } else {
+            // Nếu chưa nộp
+            return `Đang làm Bài nghe ${lessonName}`;
+        }
+    }
+    
+    // Mặc định phòng hờ
+    return "Đang làm bài";
+}
+
+
+function startHeartbeat(studentId) {
+    setInterval(function() {
+        const formData = new URLSearchParams();
+        formData.append('action', 'ping');
+        formData.append('id', studentId);
+        
+        // QUAN TRỌNG: Chèn status thật vào đây để không bị GAS ép về "Đang làm bài"
+        formData.append('status', getRealStatus()); 
+        
+        fetch(GAS_URL, {
+            method: "POST",
+            body: formData 
+        }).catch(err => console.log("Lỗi ping:", err));
+    }, 60000); 
+}
+
+// --- CHÈN CODE CỦA BẠN VÀO ĐÂY ---
+// Bắt sự kiện học sinh đóng trình duyệt, tải lại trang hoặc tắt tab
+window.addEventListener('beforeunload', function () {
+    if (typeof currentStudent !== 'undefined' && currentStudent.id) {
+        const formData = new FormData();
+        formData.append('action', 'ping');
+        formData.append('id', currentStudent.id);
+        formData.append('status', 'Mất kết nối (Thoát trang)');
+        navigator.sendBeacon(GAS_URL, formData);
+    }
+});
+
+let tabSwitchTimeout;
+let hasSentTabSwitchSignal = false; 
+
+document.addEventListener("visibilitychange", function() {
+    if (typeof currentStudent !== 'undefined' && currentStudent.id) {
+        
+        if (document.hidden) {
+            tabSwitchTimeout = setTimeout(function() {
+                hasSentTabSwitchSignal = true; 
+                const formData = new FormData();
+                formData.append('action', 'ping');
+                formData.append('id', currentStudent.id);
+                formData.append('status', '⚠️ ĐANG LƯỚT TAB KHÁC (Quá 1 phút)!');
+                navigator.sendBeacon(GAS_URL, formData);
+            }, 60000); 
+            
+        } else {
+            clearTimeout(tabSwitchTimeout);
+            
+            if (hasSentTabSwitchSignal) {
+                // Sử dụng luôn hàm getRealStatus để đồng bộ
+                let currentStatus = getRealStatus();
+                
+                const formData = new FormData();
+                formData.append('action', 'ping');
+                formData.append('id', currentStudent.id);
+                formData.append('status', currentStatus);
+                navigator.sendBeacon(GAS_URL, formData);
+                
+                hasSentTabSwitchSignal = false; 
+            }
+        }
+    }
+});
+
+async function sendReportToSheet(score, total, timeSpent, testNameOverride) {
+    let realTestName = testNameOverride || document.title;
+    
+    if (!testNameOverride) {
+        if (typeof currentLessonIndex !== 'undefined' && lessonsData[currentLessonIndex]) {
+            realTestName = lessonsData[currentLessonIndex].name;
+        }
+    }
+
+    const submitBtn = document.querySelector('button[onclick="checkResults()"]');
+    if(submitBtn) { submitBtn.innerText = "ĐANG GỬI..."; submitBtn.disabled = true; }
+
+    const formData = new URLSearchParams();
+    formData.append('action', 'submitReport');
+    formData.append('id', currentStudent.id);
+    formData.append('name', currentStudent.name);
+    formData.append('testName', realTestName);
+    formData.append('score', score + "/" + total);
+    formData.append('time', timeSpent + " giây");
+    formData.append('details', "Đã hoàn thành");
+    formData.append('note', 'Listening'); // <--- GHI CHÚ LISTENING 
+
+    try {
+        await fetch(GAS_URL, { method: 'POST', body: formData, redirect: 'follow' });
+    } catch(e) {
+        console.error("Lỗi khi gửi kết quả!", e);
+    }
+    
+    if(submitBtn) { submitBtn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Đã Nộp'; }
+}
+// ------------------------------------
+	
+	window.targetStopTime = null; // Biến toàn cục lưu điểm dừng
+
+window.playAudioFrom = function(time) {
+    const audio = document.getElementById('audio');
+    if (!audio) return;
+
+    const autoPauseToggle = document.getElementById('auto-pause-toggle');
+    const isAutoPauseActive = autoPauseToggle && autoPauseToggle.checked;
+
+    if (isAutoPauseActive) {
+        // Thu thập tất cả các mốc thời gian của nút play trên màn hình
+        const playBtns = document.querySelectorAll('.play-here-btn');
+        let times = [];
+        playBtns.forEach(btn => {
+            const t = parseFloat(btn.dataset.time);
+            if (!isNaN(t)) times.push(t);
+        });
+        
+        // Lọc trùng và sắp xếp từ bé đến lớn
+        times = [...new Set(times)].sort((a, b) => a - b);
+
+        const currentIndex = times.indexOf(time);
+        // Nếu không phải câu cuối cùng, lấy mốc thời gian câu tiếp theo làm điểm dừng
+        if (currentIndex !== -1 && currentIndex < times.length - 1) {
+            window.targetStopTime = times[currentIndex + 1];
+        } else {
+            window.targetStopTime = null; // Nghe đến hết nếu là câu cuối
+        }
+    } else {
+        window.targetStopTime = null; // Bỏ giới hạn nếu tắt công tắc
+    }
+
+    audio.currentTime = time;
+    audio.play();
+};
+	
+	// --- HIGHLIGHT & NOTE LOGIC ---
+        let isHlMode = false;
+
+        function toggleHighlightMode() {
+            isHlMode = !isHlMode;
+            const btn = document.getElementById('hl-toggle');
+            if (isHlMode) {
+                btn.classList.replace('bg-gray-100', 'bg-yellow-300');
+                btn.classList.replace('hover:bg-gray-200', 'hover:bg-yellow-400');
+                btn.classList.replace('text-gray-700', 'text-yellow-900');
+                btn.innerHTML = '<i class="fa-solid fa-highlighter"></i> Đang HL...';
+            } else {
+                btn.classList.replace('bg-yellow-300', 'bg-gray-100');
+                btn.classList.replace('hover:bg-yellow-400', 'hover:bg-gray-200');
+                btn.classList.replace('text-yellow-900', 'text-gray-700');
+                btn.innerHTML = '<i class="fa-solid fa-highlighter"></i> Bật Highlight';
+            }
+        }
+
+        document.addEventListener('mouseup', function(e) {
+            // Bỏ qua nếu click vào nút float
+            if(e.target.id === 'floating-note-btn') return;
+
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+            const floatBtn = document.getElementById('floating-note-btn');
+
+            // Chỉ kích hoạt khi bôi đen nội dung trong vùng làm bài
+            if (text.length > 0 && e.target.closest('#main-container')) {
+                if (isHlMode) {
+                    applyHighlight(selection);
+                    floatBtn.style.display = 'none';
+                } else {
+                    // Nếu đang tắt Highlight -> Hiện nút Note
+                    const range = selection.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                    floatBtn.style.display = 'block';
+                    floatBtn.style.top = (rect.top + window.scrollY - 35) + 'px';
+                    floatBtn.style.left = (rect.left + window.scrollX + (rect.width/2) - 30) + 'px';
+                    window.currentNoteRange = range.cloneRange();
+                }
+            } else {
+                floatBtn.style.display = 'none';
+            }
+        });
+
+        function applyHighlight(selection) {
+            const color = document.getElementById('hl-color').value;
+            const range = selection.getRangeAt(0);
+            const span = document.createElement('span');
+            span.className = 'user-hl';
+            span.style.backgroundColor = color;
+            span.title = "Click để xóa highlight";
+            
+            try {
+                range.surroundContents(span);
+            } catch(e) {
+                alert("Vui lòng bôi đen từng đoạn ngắn, không bôi đen chéo qua các ô trống hoặc nhiều dòng cùng lúc.");
+            }
+            selection.removeAllRanges();
+        }
+
+        function createNote() {
+            document.getElementById('floating-note-btn').style.display = 'none';
+            const noteText = prompt("Nhập nội dung ghi chú cho cụm từ này:");
+            
+            if (noteText && window.currentNoteRange) {
+                const span = document.createElement('span');
+                span.className = 'user-note';
+                span.dataset.note = noteText;
+                span.title = noteText;
+                try {
+                    window.currentNoteRange.surroundContents(span);
+                } catch(e) {
+                    alert("Vui lòng bôi đen đoạn văn bản liên tục, không chứa ô trống điền từ.");
+                }
+            }
+            window.getSelection().removeAllRanges();
+        }
+
+        // Ủy quyền sự kiện click để Xóa Highlight hoặc Sửa Note
+        document.addEventListener('click', function(e) {
+            // Xóa Highlight
+            if (e.target.classList.contains('user-hl')) {
+                const parent = e.target.parentNode;
+                while (e.target.firstChild) {
+                    parent.insertBefore(e.target.firstChild, e.target);
+                }
+                parent.removeChild(e.target);
+            }
+
+            // Mở và Sửa Note
+            if (e.target.classList.contains('user-note')) {
+                const currentNote = e.target.dataset.note;
+                const newNote = prompt("Chỉnh sửa ghi chú (Xóa trắng để gỡ bỏ ghi chú):", currentNote);
+                
+                if (newNote === null) return; // Nhấn Cancel
+                
+                if (newNote.trim() === "") {
+                    // Xóa hoàn toàn note
+                    const parent = e.target.parentNode;
+                    while (e.target.firstChild) {
+                        parent.insertBefore(e.target.firstChild, e.target);
+                    }
+                    parent.removeChild(e.target);
+                } else {
+                    // Cập nhật nội dung mới
+                    e.target.dataset.note = newNote;
+                    e.target.title = newNote;
+                }
+            }
+        });
+        const lessonsData = [{"name":"Kangaroo Lodge","audio":"https://engnovate.com/wp-content/uploads/2026/04/official_cambridge_guide_to_ielts_academic_listening_test_7_1.mp3","image":"","hideTrans":false,"removeDragged":false,"imgLeft":false,"answerKey":{"input-auto-0":"unfriendly","input-auto-1":"noisy","input-auto-3":"insects","input-auto-4":"bathrooms","input-auto-5":"party","input-auto-6":"SHADFORTH","input-auto-7":"towel","input-auto-8":"breakfast","input-auto-9":"kitchen","input-auto-2":"23.50/23.5"},"itemImages":{},"processedTranscript":"\u003cp data-time=\"0.000\">Recording 63 You will hear a telephone conversation between\u003c/p>\n\u003cp data-time=\"4.961\">two friends called Julie and Nick about cheaper\u003c/p>\n\u003cp data-time=\"8.320\">accommodation in the city of Darwin, Australia.\u003c/p>\n\u003cp data-time=\"12.320\">First you have some time to look at questions one to six.\u003c/p>\n\u003cp data-time=\"50.989\">Hi Nick, it\\'s Julie. Have you managed to find\u003c/p>\n\u003cp data-time=\"53.981\">any information about accommodation in Darwin?\u003c/p>\n\u003cp data-time=\"57.809\">Hi, I was just going to call you.\u003c/p>\n\u003cp data-time=\"60.258\">I found some on the internet. There were quite a few\u003c/p>\n\u003cp data-time=\"64.081\">hostels for backpackers there. The first possibility\u003c/p>\n\u003cp data-time=\"68.240\">I found was a hostel called Tophand Backpackers.\u003c/p>\n\u003cp data-time=\"72.179\">Okay. It\\'s pretty cheap. You can get a bed in a dormitory for $19 per person.\u003c/p>\n\u003cp data-time=\"79.809\">Private rooms cost a bit more, but will be okay in dormitories, won\\'t we? Sure.\u003c/p>\n\u003cp data-time=\"86.399\">So that hostel has parking, though that doesn\\'t really\u003c/p>\n\u003cp data-time=\"90.384\">matter to us, as we\\'ll be using public transport.\u003c/p>\n\u003cp data-time=\"94.719\">Yeah. Are there any reviews on the website from people who have been there?\u003c/p>\n\u003cp data-time=\"100.720\">Well, yes. They aren\\'t all that good though.\u003c/p>\n\u003cp data-time=\"104.120\">Some people said they didn\\'t like the staff.\u003c/p>\n\u003cp data-time=\"108.259\">They had an unfriendly attitude.\u003c/p>\n\u003cp data-time=\"112.259\">That\\'s quite unusual in a hostel. Usually all the staff are really welcoming.\u003c/p>\n\u003cp data-time=\"118.099\">That\\'s what I thought. People said they liked\u003c/p>\n\u003cp data-time=\"121.083\">the pool and the fact that the rooms had air\u003c/p>\n\u003cp data-time=\"124.001\">conditioning, but the problem with that was\u003c/p>\n\u003cp data-time=\"126.457\">that it was very noisy, so they were kept awake,\u003c/p>\n\u003cp data-time=\"130.070\">but it was too hot if they turned it off, so they had to put up with it.\u003c/p>\n\u003cp data-time=\"135.495\">Someone told me there\\'s another hostel called Gumtree Something?\u003c/p>\n\u003cp data-time=\"141.120\">Gumtree Lodge. It costs a bit more. 45 dollars a person. What?\u003c/p>\n\u003cp data-time=\"147.810\">Oh, no. That\\'s for private rooms. It\\'s 2350 for the dorms.\u003c/p>\n\u003cp data-time=\"154.064\">That\\'s more like it.\u003c/p>\n\u003cp data-time=\"156.260\">It looks to be in quite a good location, a bit\u003c/p>\n\u003cp data-time=\"159.650\">out of town and quiet, but with good transport\u003c/p>\n\u003cp data-time=\"163.115\">and quite near a beach. Has it got a pool?\u003c/p>\n\u003cp data-time=\"166.800\">Yes, and it\\'s own gardens. The reviews for that\u003c/p>\n\u003cp data-time=\"170.843\">one are mostly okay, except for one person who\u003c/p>\n\u003cp data-time=\"174.801\">said they couldn\\'t sleep because they were insects flying around in the dormitories.\u003c/p>\n\u003cp data-time=\"179.920\">Not for me then. And I\\'d rather be somewhere central, really.\u003c/p>\n\u003cp data-time=\"185.600\">Right. There\\'s a place called Kangaroo Lodge. They\\'ve got dorms at $22,\u003c/p>\n\u003cp data-time=\"193.165\">and it\\'s downtown near all the restaurants and\u003c/p>\n\u003cp data-time=\"195.902\">clubs and everything, so that should suit you,\u003c/p>\n\u003cp data-time=\"199.430\">and it doesn\\'t close at night.\u003c/p>\n\u003cp data-time=\"201.680\">So there\\'s always someone on reception. That sounds good.\u003c/p>\n\u003cp data-time=\"207.060\">The only criticism I saw was that the rooms were a bit messy and untidy,\u003c/p>\n\u003cp data-time=\"212.260\">because people just left their clothes and stuff all over the beds and the floor.\u003c/p>\n\u003cp data-time=\"216.930\">Don\\'t hostels usually have lockers in the bedrooms where you can leave your stuff.\u003c/p>\n\u003cp data-time=\"222.560\">Yeah, they do usually, but apparently they don\\'t here.\u003c/p>\n\u003cp data-time=\"227.815\">Still, hostels are never particularly tidy places, so that doesn\\'t bother me.\u003c/p>\n\u003cp data-time=\"233.510\">And the same person said that the standard of cleanliness was pretty good,\u003c/p>\n\u003cp data-time=\"237.460\">and especially the bathrooms. They were excellent as far as that went.\u003c/p>\n\u003cp data-time=\"242.210\">Right. Yeah, I reckon Kangaroo Lodge sounds the best.\u003c/p>\n\u003cp data-time=\"247.305\">Me too. Quite a lot of people reviewing it said it was really fun there.\u003c/p>\n\u003cp data-time=\"252.420\">Like every night everyone\\'s staying, they got together and ended up having a party.\u003c/p>\n\u003cp data-time=\"256.980\">So it sounds like it\\'s got a really good atmosphere.\u003c/p>\n\u003cp data-time=\"259.920\">Okay, let\\'s go for that one.\u003c/p>\n\u003cp data-time=\"265.380\">Before you hear the rest of the conversation,\u003c/p>\n\u003cp data-time=\"267.809\">you will have some time to look at the questions 7 to 10.\u003c/p>\n\u003cp data-time=\"291.720\">Do you get the address of Kangaroo Lodge?\u003c/p>\n\u003cp data-time=\"299.469\">Yes. It\\'s on shared fourth line.\u003c/p>\n\u003cp data-time=\"303.250\">Can you spell that?\u003c/p>\n\u003cp data-time=\"309.230\">S-H-A-D-F-O-R-T-H. It\\'s near the transit centre\u003c/p>\n\u003cp data-time=\"313.315\">where the intercity buses and the airport buses drop you off.\u003c/p>\n\u003cp data-time=\"318.585\">Cool. I\\'m really looking forward to this. I\\'ve never stayed in a hostel before.\u003c/p>\n\u003cp data-time=\"325.810\">Do they provide bed linen, sheets and things?\u003c/p>\n\u003cp data-time=\"329.760\">Yeah. And you can usually either bring your own towel or hire one there.\u003c/p>\n\u003cp data-time=\"336.740\">But they don\\'t usually provide those for free.\u003c/p>\n\u003cp data-time=\"339.895\">Okay. And what happens about meals?\u003c/p>\n\u003cp data-time=\"344.450\">Well, you don\\'t have to pay extra for breakfast.\u003c/p>\n\u003cp data-time=\"347.875\">It varies a lot in different places,\u003c/p>\n\u003cp data-time=\"351.140\">but generally it\\'s okay. And there\\'s usually a cafe\u003c/p>\n\u003cp data-time=\"354.280\">where you can buy a snack or a hot meal for lunch.\u003c/p>\n\u003cp data-time=\"358.340\">But actually, if you\\'re really travelling on\u003c/p>\n\u003cp data-time=\"361.502\">the cheap, usually for every five or six rooms,\u003c/p>\n\u003cp data-time=\"364.980\">there\\'s a kitchen where you can knock up a snack. And that saves a lot of money.\u003c/p>\n\u003cp data-time=\"370.210\">Great. Right. Well, shall I go ahead and book that?\u003c/p>\n\u003cp data-time=\"378.160\">That is the end of section one. You now have half a minute to check your answers.\u003c/p>\n\u003cp data-time=\"413.960\">Now turn to section two.\u003c/p>\n\u003cp data-time=\"420.080\">[BLANK_AUDIO]\u003c/p>\n","processedQuestions":"\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Questions 1–6\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Complete the table below.\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Write \u003cb>NO MORE THAN ONE WORD AND/OR A NUMBER\u003c/b> for each answer.\u003c/h3>\u003cdiv class=\"overflow-x-auto mb-4\">\u003ctable class=\"generated-table w-full mt-2\">\u003ctbody>\u003ctr>\u003ctd class=\"align-top\">\u003cb>Name\u003c/b>\u003c/td>\u003ctd class=\"align-top\">\u003cb>Price per person (dormitory rooms)\u003c/b>\u003c/td>\u003ctd class=\"align-top\">\u003cb>Comments and reviews\u003c/b>\u003c/td>\u003c/tr>\u003ctr>\u003ctd class=\"align-top\">Example: \u003cbr> Top End Backpackers\u003c/td>\u003ctd class=\"align-top\">$19\u003c/td>\u003ctd class=\"align-top\">- parking available \u003cbr> - staff are\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">1\u003c/span>\u003cinput type=\"text\" id=\"input-auto-0\" class=\"mx-1 inline-block align-middle\"> \u003cbr> - nice pool \u003cbr> - air-conditioning is too\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">2\u003c/span>\u003cinput type=\"text\" id=\"input-auto-1\" class=\"mx-1 inline-block align-middle\">\u003c/td>\u003c/tr>\u003ctr>\u003ctd class=\"align-top\">Gum Tree Lodge\u003c/td>\u003ctd class=\"align-top\">$\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">3\u003c/span>\u003cinput type=\"text\" id=\"input-auto-2\" class=\"mx-1 inline-block align-middle\">\u003c/td>\u003ctd class=\"align-top\">- good quiet location \u003cbr> - pool and gardens \u003cbr> -\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">4\u003c/span>\u003cinput type=\"text\" id=\"input-auto-3\" class=\"mx-1 inline-block align-middle\"> in the dormitories\u003c/td>\u003c/tr>\u003ctr>\u003ctd class=\"align-top\">Kangaroo Lodge\u003c/td>\u003ctd class=\"align-top\">$22\u003c/td>\u003ctd class=\"align-top\">- downtown location \u003cbr> - reception at the lodge is always open \u003cbr> - no lockers in the rooms \u003cbr> - the\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">5\u003c/span>\u003cinput type=\"text\" id=\"input-auto-4\" class=\"mx-1 inline-block align-middle\"> are very clean \u003cbr> - seems to be a\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">6\u003c/span>\u003cinput type=\"text\" id=\"input-auto-5\" class=\"mx-1 inline-block align-middle\"> every night\u003c/td>\u003c/tr>\u003c/tbody>\u003c/table>\u003c/div>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Questions 7–10\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Complete the notes below.\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Write \u003cb>ONE WORD ONLY\u003c/b> for each answer.\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Kangaroo Lodge\u003c/h3>\u003cdiv id=\"q-auto-0\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Address: on\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">7\u003c/span>\u003cinput type=\"text\" id=\"input-auto-6\" class=\"mx-1 inline-block align-middle\"> Lane\u003c/div>\u003c/div>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">General information about hostel accommodation\u003c/h3>\u003cp class=\"mb-2 text-gray-700 text-sm ml-2\">•\tsheets are provided\u003c/p>\u003cdiv id=\"q-auto-1\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">•\tcan hire a\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">8\u003c/span>\u003cinput type=\"text\" id=\"input-auto-7\" class=\"mx-1 inline-block align-middle\">\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-2\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">•\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">9\u003c/span>\u003cinput type=\"text\" id=\"input-auto-8\" class=\"mx-1 inline-block align-middle\"> is included\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-3\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">•\ta shared\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">10\u003c/span>\u003cinput type=\"text\" id=\"input-auto-9\" class=\"mx-1 inline-block align-middle\"> is available\u003c/div>\u003c/div>","totalQs":10,"rawTranscript":"{t:0.000, text:'Recording 63 You will hear a telephone conversation between'},\n{t:4.961, text:'two friends called Julie and Nick about cheaper'},\n{t:8.320, text:'accommodation in the city of Darwin, Australia.'},\n{t:12.320, text:'First you have some time to look at questions one to six.'},\n{t:50.989, text:'Hi Nick, it\\'s Julie. Have you managed to find'},\n{t:53.981, text:'any information about accommodation in Darwin?'},\n{t:57.809, text:'Hi, I was just going to call you.'},\n{t:60.258, text:'I found some on the internet. There were quite a few'},\n{t:64.081, text:'hostels for backpackers there. The first possibility'},\n{t:68.240, text:'I found was a hostel called Tophand Backpackers.'},\n{t:72.179, text:'Okay. It\\'s pretty cheap. You can get a bed in a dormitory for $19 per person.'},\n{t:79.809, text:'Private rooms cost a bit more, but will be okay in dormitories, won\\'t we? Sure.'},\n{t:86.399, text:'So that hostel has parking, though that doesn\\'t really'},\n{t:90.384, text:'matter to us, as we\\'ll be using public transport.'},\n{t:94.719, text:'Yeah. Are there any reviews on the website from people who have been there?'},\n{t:100.720, text:'Well, yes. They aren\\'t all that good though.'},\n{t:104.120, text:'Some people said they didn\\'t like the staff.'},\n{t:108.259, text:'They had an unfriendly attitude.'},\n{t:112.259, text:'That\\'s quite unusual in a hostel. Usually all the staff are really welcoming.'},\n{t:118.099, text:'That\\'s what I thought. People said they liked'},\n{t:121.083, text:'the pool and the fact that the rooms had air'},\n{t:124.001, text:'conditioning, but the problem with that was'},\n{t:126.457, text:'that it was very noisy, so they were kept awake,'},\n{t:130.070, text:'but it was too hot if they turned it off, so they had to put up with it.'},\n{t:135.495, text:'Someone told me there\\'s another hostel called Gumtree Something?'},\n{t:141.120, text:'Gumtree Lodge. It costs a bit more. 45 dollars a person. What?'},\n{t:147.810, text:'Oh, no. That\\'s for private rooms. It\\'s 2350 for the dorms.'},\n{t:154.064, text:'That\\'s more like it.'},\n{t:156.260, text:'It looks to be in quite a good location, a bit'},\n{t:159.650, text:'out of town and quiet, but with good transport'},\n{t:163.115, text:'and quite near a beach. Has it got a pool?'},\n{t:166.800, text:'Yes, and it\\'s own gardens. The reviews for that'},\n{t:170.843, text:'one are mostly okay, except for one person who'},\n{t:174.801, text:'said they couldn\\'t sleep because they were insects flying around in the dormitories.'},\n{t:179.920, text:'Not for me then. And I\\'d rather be somewhere central, really.'},\n{t:185.600, text:'Right. There\\'s a place called Kangaroo Lodge. They\\'ve got dorms at $22,'},\n{t:193.165, text:'and it\\'s downtown near all the restaurants and'},\n{t:195.902, text:'clubs and everything, so that should suit you,'},\n{t:199.430, text:'and it doesn\\'t close at night.'},\n{t:201.680, text:'So there\\'s always someone on reception. That sounds good.'},\n{t:207.060, text:'The only criticism I saw was that the rooms were a bit messy and untidy,'},\n{t:212.260, text:'because people just left their clothes and stuff all over the beds and the floor.'},\n{t:216.930, text:'Don\\'t hostels usually have lockers in the bedrooms where you can leave your stuff.'},\n{t:222.560, text:'Yeah, they do usually, but apparently they don\\'t here.'},\n{t:227.815, text:'Still, hostels are never particularly tidy places, so that doesn\\'t bother me.'},\n{t:233.510, text:'And the same person said that the standard of cleanliness was pretty good,'},\n{t:237.460, text:'and especially the bathrooms. They were excellent as far as that went.'},\n{t:242.210, text:'Right. Yeah, I reckon Kangaroo Lodge sounds the best.'},\n{t:247.305, text:'Me too. Quite a lot of people reviewing it said it was really fun there.'},\n{t:252.420, text:'Like every night everyone\\'s staying, they got together and ended up having a party.'},\n{t:256.980, text:'So it sounds like it\\'s got a really good atmosphere.'},\n{t:259.920, text:'Okay, let\\'s go for that one.'},\n{t:265.380, text:'Before you hear the rest of the conversation,'},\n{t:267.809, text:'you will have some time to look at the questions 7 to 10.'},\n{t:291.720, text:'Do you get the address of Kangaroo Lodge?'},\n{t:299.469, text:'Yes. It\\'s on shared fourth line.'},\n{t:303.250, text:'Can you spell that?'},\n{t:309.230, text:'S-H-A-D-F-O-R-T-H. It\\'s near the transit centre'},\n{t:313.315, text:'where the intercity buses and the airport buses drop you off.'},\n{t:318.585, text:'Cool. I\\'m really looking forward to this. I\\'ve never stayed in a hostel before.'},\n{t:325.810, text:'Do they provide bed linen, sheets and things?'},\n{t:329.760, text:'Yeah. And you can usually either bring your own towel or hire one there.'},\n{t:336.740, text:'But they don\\'t usually provide those for free.'},\n{t:339.895, text:'Okay. And what happens about meals?'},\n{t:344.450, text:'Well, you don\\'t have to pay extra for breakfast.'},\n{t:347.875, text:'It varies a lot in different places,'},\n{t:351.140, text:'but generally it\\'s okay. And there\\'s usually a cafe'},\n{t:354.280, text:'where you can buy a snack or a hot meal for lunch.'},\n{t:358.340, text:'But actually, if you\\'re really travelling on'},\n{t:361.502, text:'the cheap, usually for every five or six rooms,'},\n{t:364.980, text:'there\\'s a kitchen where you can knock up a snack. And that saves a lot of money.'},\n{t:370.210, text:'Great. Right. Well, shall I go ahead and book that?'},\n{t:378.160, text:'That is the end of section one. You now have half a minute to check your answers.'},\n{t:413.960, text:'Now turn to section two.'},\n{t:420.080, text:'[BLANK_AUDIO]'},\n","rawQuestions":"Questions 1–6 \nComplete the table below.\nWrite \u003cb>NO MORE THAN ONE WORD AND/OR A NUMBER\u003c/b> for each answer.\n\n[TABLE]\n\u003cb>Name\u003c/b> |\t\u003cb>Price per person (dormitory rooms)\u003c/b> |\t\u003cb>Comments and reviews\u003c/b>\nExample: \u003cbr> Top End Backpackers |\t$19 |\t- parking available \u003cbr> - staff are 1 ______ \u003cbr> - nice pool \u003cbr> - air-conditioning is too 2 ______\nGum Tree Lodge |\t$3 ______ |\t- good quiet location \u003cbr> - pool and gardens \u003cbr> - 4 ______ in the dormitories\nKangaroo Lodge |\t$22 |\t- downtown location \u003cbr> - reception at the lodge is always open \u003cbr> - no lockers in the rooms \u003cbr> - the 5 ______ are very clean \u003cbr> - seems to be a 6 ______ every night\n[/TABLE]\n\nQuestions 7–10 \nComplete the notes below.\nWrite \u003cb>ONE WORD ONLY\u003c/b> for each answer.\nKangaroo Lodge\nAddress: on 7 ______ Lane\nGeneral information about hostel accommodation\n•\tsheets are provided\n•\tcan hire a 8 ______\n•\t9 ______ is included\n•\ta shared 10 ______ is available\n","prevocab":"","processedPreVocab":"","hasPreVocab":false},{"name":"ACCOMMODATION FORM: RENTAL PROPERTIES","audio":"https://engnovate.com/wp-content/uploads/2026/04/official_cambridge_guide_to_ielts_academic_listening_test_6_1.mp3","image":"","hideTrans":false,"removeDragged":false,"imgLeft":false,"answerKey":{"input-auto-0":"2086132978","input-auto-1":"visiontech","input-auto-2":"doctor","input-auto-3":"garage","input-auto-4":"furniture","input-auto-5":"fridge","input-auto-6":"school","input-auto-7":"950","input-auto-8":"quiet","input-auto-9":"friend"},"itemImages":{},"processedTranscript":"\u003cp data-time=\"0.000\">Recording 59.\u003c/p>\n\u003cp data-time=\"2.481\">You will hear a phone conversation between an estate\u003c/p>\n\u003cp data-time=\"5.661\">agent and a woman wishing to rent a accommodation.\u003c/p>\n\u003cp data-time=\"8.721\">First, you have some time to look at questions 1-10.\u003c/p>\n\u003cp data-time=\"32.000\">[BLANK_AUDIO]\u003c/p>\n\u003cp data-time=\"64.080\">[BLANK_AUDIO]\u003c/p>\n\u003cp data-time=\"72.179\">Fairfield rentals, Andrew Williams.\u003c/p>\n\u003cp data-time=\"74.659\">How can I help you?\u003c/p>\n\u003cp data-time=\"75.809\">Oh hello, I\\'m calling from the UK, and my\u003c/p>\n\u003cp data-time=\"79.567\">family are moving to Canada early next year.\u003c/p>\n\u003cp data-time=\"83.649\">And we\\'re hoping to find somewhere to rent in\u003c/p>\n\u003cp data-time=\"86.390\">Fairfield for the first six months while we settle in.\u003c/p>\n\u003cp data-time=\"90.129\">Right, I see.\u003c/p>\n\u003cp data-time=\"91.979\">Well, let\\'s get your details.\u003c/p>\n\u003cp data-time=\"94.489\">Yes, my name\\'s Jane Ryder.\u003c/p>\n\u003cp data-time=\"97.329\">Okay, Jane.\u003c/p>\n\u003cp data-time=\"98.769\">And can I have a phone number?\u003c/p>\n\u003cp data-time=\"101.419\">The best number to get you on.\u003c/p>\n\u003cp data-time=\"103.609\">Well, that\\'d probably be our home number.\u003c/p>\n\u003cp data-time=\"113.200\">So, double O, double 4 for the UK, and then it\\'s 208 613 2978.\u003c/p>\n\u003cp data-time=\"121.320\">All right, and an email address, please, so we\u003c/p>\n\u003cp data-time=\"125.276\">can send you out all the information and forms.\u003c/p>\n\u003cp data-time=\"129.321\">I think it\\'s best if I give you my husband\\'s email.\u003c/p>\n\u003cp data-time=\"134.840\">He\\'s sitting in front of a computer all day, so he can\u003c/p>\n\u003cp data-time=\"138.663\">print stuff off and get it back to you sooner than I could.\u003c/p>\n\u003cp data-time=\"159.360\">It\\'s richard@visiontech.co.uk I\\'ll just spell the company name for you.\u003c/p>\n\u003cp data-time=\"167.361\">That\\'s V-I-S-I-O-N-T-E-C-H.\u003c/p>\n\u003cp data-time=\"169.601\">Richard\\'s an IT specialist for an advertising company.\u003c/p>\n\u003cp data-time=\"174.521\">They\\'re transferring him to their Fairfield branch.\u003c/p>\n\u003cp data-time=\"178.295\">Actually, just your job for now, thanks.\u003c/p>\n\u003cp data-time=\"182.081\">Me, I\\'m a doctor at the hospital in our town.\u003c/p>\n\u003cp data-time=\"186.450\">Okay, I\\'ll put that down.\u003c/p>\n\u003cp data-time=\"189.281\">Now, what kind of accommodation are you looking for?\u003c/p>\n\u003cp data-time=\"194.241\">House, apartment?\u003c/p>\n\u003cp data-time=\"196.695\">An apartment, probably, as long as it has two bedrooms.\u003c/p>\n\u003cp data-time=\"201.161\">They\\'ll be me, my husband, and our 10-year-old son.\u003c/p>\n\u003cp data-time=\"206.401\">Then, so with an apartment, you\\'re less likely to get a garden.\u003c/p>\n\u003cp data-time=\"211.041\">That\\'s okay.\u003c/p>\n\u003cp data-time=\"213.190\">But what about a garage?\u003c/p>\n\u003cp data-time=\"215.161\">Is that something you\\'ll want the apartment to have?\u003c/p>\n\u003cp data-time=\"218.161\">Yes, that\\'s definitely important.\u003c/p>\n\u003cp data-time=\"221.200\">Okay, just a moment.\u003c/p>\n\u003cp data-time=\"223.161\">I\\'ll just make a note of that.\u003c/p>\n\u003cp data-time=\"226.200\">But before we go on, I should probably say\u003c/p>\n\u003cp data-time=\"230.106\">now that what we don\\'t need is any furniture because we\\'ll be shipping all that over.\u003c/p>\n\u003cp data-time=\"237.361\">And I don\\'t really want to pay for storage while we\\'re waiting to buy a house.\u003c/p>\n\u003cp data-time=\"243.601\">Not a problem.\u003c/p>\n\u003cp data-time=\"244.601\">I\\'ll make a note of that.\u003c/p>\n\u003cp data-time=\"247.060\">Actually, though, just thinking about the\u003c/p>\n\u003cp data-time=\"250.294\">kitchen, what can I expect from a rental property?\u003c/p>\n\u003cp data-time=\"254.241\">I mean, what kind of equipment is provided?\u003c/p>\n\u003cp data-time=\"258.081\">Well, the normal thing is that you get a stove.\u003c/p>\n\u003cp data-time=\"262.121\">I think that\\'s a cooker in British English.\u003c/p>\n\u003cp data-time=\"265.041\">Okay, good to know.\u003c/p>\n\u003cp data-time=\"267.241\">But how about a fridge?\u003c/p>\n\u003cp data-time=\"269.321\">We\\'ll be selling ours before we come.\u003c/p>\n\u003cp data-time=\"272.161\">So if possible, we\\'d like the apartment to have one for when we arrive.\u003c/p>\n\u003cp data-time=\"277.961\">I can certainly add that to the form.\u003c/p>\n\u003cp data-time=\"281.361\">If there\\'s any other whiteware that you need, like a dishwasher, for example, there\u003c/p>\n\u003cp data-time=\"287.320\">are plenty of stores here that will arrange delivery on the same day as purchase.\u003c/p>\n\u003cp data-time=\"292.481\">Thanks.\u003c/p>\n\u003cp data-time=\"293.530\">Hopefully, we won\\'t need to buy too many things.\u003c/p>\n\u003cp data-time=\"297.650\">Now, how about location?\u003c/p>\n\u003cp data-time=\"301.041\">Have you done any research into the Fairfield area?\u003c/p>\n\u003cp data-time=\"304.841\">Not that much so far.\u003c/p>\n\u003cp data-time=\"307.180\">Well, you mentioned you have a boy.\u003c/p>\n\u003cp data-time=\"310.001\">I imagine you\\'d like to be fairly close to a school.\u003c/p>\n\u003cp data-time=\"314.121\">Good idea.\u003c/p>\n\u003cp data-time=\"315.361\">That would help.\u003c/p>\n\u003cp data-time=\"317.001\">What\\'s public transport like in Fairfield?\u003c/p>\n\u003cp data-time=\"320.081\">Is it easy to get around?\u003c/p>\n\u003cp data-time=\"322.601\">The bus service is pretty comprehensive.\u003c/p>\n\u003cp data-time=\"325.881\">There are plenty of local routes, services into the city and out of town.\u003c/p>\n\u003cp data-time=\"330.930\">Okay, and for a two-bedroom apartment, what sort of rent should we expect to pay?\u003c/p>\n\u003cp data-time=\"337.970\">Well, looking at the properties we have at the moment, prices start from around $730\u003c/p>\n\u003cp data-time=\"345.361\">per month, and, depending on the area, can go up to $1,200.\u003c/p>\n\u003cp data-time=\"351.201\">That\\'s too much.\u003c/p>\n\u003cp data-time=\"352.881\">Something halfway would be better.\u003c/p>\n\u003cp data-time=\"355.641\">So would your limit be, say, $950?\u003c/p>\n\u003cp data-time=\"360.081\">I\\'d say so, yes.\u003c/p>\n\u003cp data-time=\"362.521\">Can I ask if you smoke or if you have any pets?\u003c/p>\n\u003cp data-time=\"366.561\">No to both questions, but I do have one more request, please.\u003c/p>\n\u003cp data-time=\"371.961\">Yes.\u003c/p>\n\u003cp data-time=\"372.961\">Well, I\\'ve also been offered a job at Victoria\u003c/p>\n\u003cp data-time=\"376.739\">General Hospital, and I suspect I\\'ll be working\u003c/p>\n\u003cp data-time=\"380.601\">nights occasionally, so what I really need from any apartment is for it to be quiet.\u003c/p>\n\u003cp data-time=\"388.481\">So I can catch up on sleep if necessary during the day.\u003c/p>\n\u003cp data-time=\"393.281\">Congratulations on the job offer.\u003c/p>\n\u003cp data-time=\"395.881\">I\\'ll add your request to the form.\u003c/p>\n\u003cp data-time=\"399.520\">Well, what I\\'ll do is compile a list of suitable\u003c/p>\n\u003cp data-time=\"403.634\">properties for you and send them via email.\u003c/p>\n\u003cp data-time=\"407.321\">Can I just ask, how did you hear about us?\u003c/p>\n\u003cp data-time=\"410.730\">Obviously, not from our commercials, if you\\'re living in the UK.\u003c/p>\n\u003cp data-time=\"415.121\">Actually, it was a friend of ours.\u003c/p>\n\u003cp data-time=\"417.601\">He spent a few months in Fairfield a couple of\u003c/p>\n\u003cp data-time=\"420.714\">years ago, and he pointed us in the direction of your website.\u003c/p>\n\u003cp data-time=\"425.480\">\"Well, it\\'s good to be recommended.\u003c/p>\n\u003cp data-time=\"429.100\">So what I\\'ll do is... \" That is the end of section 1.\u003c/p>\n\u003cp data-time=\"435.881\">You now have half a minute to check your answers.\u003c/p>\n\u003cp data-time=\"468.310\">Now turn to section 2.\u003c/p>\n","processedQuestions":"\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Questions 1–10\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Complete the notes below.\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Write \u003cb>ONE WORD AND/OR A NUMBER\u003c/b> for each answer.\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">ACCOMMODATION FORM: RENTAL PROPERTIES\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Example\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Name: Jane Ryder\u003c/h3>\u003cdiv id=\"q-auto-0\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Contact phone number: (0044)\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">1\u003c/span>\u003cinput type=\"text\" id=\"input-auto-0\" class=\"mx-1 inline-block align-middle\"> \u003cspan class=\"play-here-btn\" data-time=\"113.200\" onclick=\"playAudioFrom(113.200)\" title=\"Phát audio tại đây\">\u003ci class=\"fa-solid fa-play text-[10px]\">\u003c/i>\u003c/span>\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-1\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Email address: richard@\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">2\u003c/span>\u003cinput type=\"text\" id=\"input-auto-1\" class=\"mx-1 inline-block align-middle\"> .co.uk \u003cspan class=\"play-here-btn\" data-time=\"159.360\" onclick=\"playAudioFrom(159.360)\" title=\"Phát audio tại đây\">\u003ci class=\"fa-solid fa-play text-[10px]\">\u003c/i>\u003c/span>\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-2\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Occupation: a local\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">3\u003c/span>\u003cinput type=\"text\" id=\"input-auto-2\" class=\"mx-1 inline-block align-middle\"> \u003cspan class=\"play-here-btn\" data-time=\"182.081\" onclick=\"playAudioFrom(182.081)\" title=\"Phát audio tại đây\">\u003ci class=\"fa-solid fa-play text-[10px]\">\u003c/i>\u003c/span>\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-3\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Type of accommodation: a 2-bedroom apartment wanted (must have its own\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">4\u003c/span>\u003cinput type=\"text\" id=\"input-auto-3\" class=\"mx-1 inline-block align-middle\">) \u003cspan class=\"play-here-btn\" data-time=\"213.190\" onclick=\"playAudioFrom(213.190)\" title=\"Phát audio tại đây\">\u003ci class=\"fa-solid fa-play text-[10px]\">\u003c/i>\u003c/span>\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-4\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">no\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">5\u003c/span>\u003cinput type=\"text\" id=\"input-auto-4\" class=\"mx-1 inline-block align-middle\"> required (family bringing theirs) \u003cspan class=\"play-here-btn\" data-time=\"230.106\" onclick=\"playAudioFrom(230.106)\" title=\"Phát audio tại đây\">\u003ci class=\"fa-solid fa-play text-[10px]\">\u003c/i>\u003c/span>\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-5\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">a\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">6\u003c/span>\u003cinput type=\"text\" id=\"input-auto-5\" class=\"mx-1 inline-block align-middle\"> in the kitchen is preferable \u003cspan class=\"play-here-btn\" data-time=\"267.241\" onclick=\"playAudioFrom(267.241)\" title=\"Phát audio tại đây\">\u003ci class=\"fa-solid fa-play text-[10px]\">\u003c/i>\u003c/span>\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-6\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Preferred location: near a\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">7\u003c/span>\u003cinput type=\"text\" id=\"input-auto-6\" class=\"mx-1 inline-block align-middle\"> \u003cspan class=\"play-here-btn\" data-time=\"310.001\" onclick=\"playAudioFrom(310.001)\" title=\"Phát audio tại đây\">\u003ci class=\"fa-solid fa-play text-[10px]\">\u003c/i>\u003c/span>\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-7\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Maximum rent: £\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">8\u003c/span>\u003cinput type=\"text\" id=\"input-auto-7\" class=\"mx-1 inline-block align-middle\"> per month \u003cspan class=\"play-here-btn\" data-time=\"355.641\" onclick=\"playAudioFrom(355.641)\" title=\"Phát audio tại đây\">\u003ci class=\"fa-solid fa-play text-[10px]\">\u003c/i>\u003c/span>\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-8\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Other requests: the accommodation has to be\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">9\u003c/span>\u003cinput type=\"text\" id=\"input-auto-8\" class=\"mx-1 inline-block align-middle\"> in the daytime \u003cspan class=\"play-here-btn\" data-time=\"380.601\" onclick=\"playAudioFrom(380.601)\" title=\"Phát audio tại đây\">\u003ci class=\"fa-solid fa-play text-[10px]\">\u003c/i>\u003c/span>\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-9\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">How did you first hear about us? through a\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">10\u003c/span>\u003cinput type=\"text\" id=\"input-auto-9\" class=\"mx-1 inline-block align-middle\"> \u003cspan class=\"play-here-btn\" data-time=\"415.121\" onclick=\"playAudioFrom(415.121)\" title=\"Phát audio tại đây\">\u003ci class=\"fa-solid fa-play text-[10px]\">\u003c/i>\u003c/span>\u003c/div>\u003c/div>","totalQs":10,"rawTranscript":"{t:0.000, text:'Recording 59.'},\n{t:2.481, text:'You will hear a phone conversation between an estate'},\n{t:5.661, text:'agent and a woman wishing to rent a accommodation.'},\n{t:8.721, text:'First, you have some time to look at questions 1-10.'},\n{t:32.000, text:'[BLANK_AUDIO]'},\n{t:64.080, text:'[BLANK_AUDIO]'},\n{t:72.179, text:'Fairfield rentals, Andrew Williams.'},\n{t:74.659, text:'How can I help you?'},\n{t:75.809, text:'Oh hello, I\\'m calling from the UK, and my'},\n{t:79.567, text:'family are moving to Canada early next year.'},\n{t:83.649, text:'And we\\'re hoping to find somewhere to rent in'},\n{t:86.390, text:'Fairfield for the first six months while we settle in.'},\n{t:90.129, text:'Right, I see.'},\n{t:91.979, text:'Well, let\\'s get your details.'},\n{t:94.489, text:'Yes, my name\\'s Jane Ryder.'},\n{t:97.329, text:'Okay, Jane.'},\n{t:98.769, text:'And can I have a phone number?'},\n{t:101.419, text:'The best number to get you on.'},\n{t:103.609, text:'Well, that\\'d probably be our home number.'},\n{t:113.200, text:'So, double O, double 4 for the UK, and then it\\'s 208 613 2978.'},\n{t:121.320, text:'All right, and an email address, please, so we'},\n{t:125.276, text:'can send you out all the information and forms.'},\n{t:129.321, text:'I think it\\'s best if I give you my husband\\'s email.'},\n{t:134.840, text:'He\\'s sitting in front of a computer all day, so he can'},\n{t:138.663, text:'print stuff off and get it back to you sooner than I could.'},\n{t:159.360, text:'It\\'s richard@visiontech.co.uk I\\'ll just spell the company name for you.'},\n{t:167.361, text:'That\\'s V-I-S-I-O-N-T-E-C-H.'},\n{t:169.601, text:'Richard\\'s an IT specialist for an advertising company.'},\n{t:174.521, text:'They\\'re transferring him to their Fairfield branch.'},\n{t:178.295, text:'Actually, just your job for now, thanks.'},\n{t:182.081, text:'Me, I\\'m a doctor at the hospital in our town.'},\n{t:186.450, text:'Okay, I\\'ll put that down.'},\n{t:189.281, text:'Now, what kind of accommodation are you looking for?'},\n{t:194.241, text:'House, apartment?'},\n{t:196.695, text:'An apartment, probably, as long as it has two bedrooms.'},\n{t:201.161, text:'They\\'ll be me, my husband, and our 10-year-old son.'},\n{t:206.401, text:'Then, so with an apartment, you\\'re less likely to get a garden.'},\n{t:211.041, text:'That\\'s okay.'},\n{t:213.190, text:'But what about a garage?'},\n{t:215.161, text:'Is that something you\\'ll want the apartment to have?'},\n{t:218.161, text:'Yes, that\\'s definitely important.'},\n{t:221.200, text:'Okay, just a moment.'},\n{t:223.161, text:'I\\'ll just make a note of that.'},\n{t:226.200, text:'But before we go on, I should probably say'},\n{t:230.106, text:'now that what we don\\'t need is any furniture because we\\'ll be shipping all that over.'},\n{t:237.361, text:'And I don\\'t really want to pay for storage while we\\'re waiting to buy a house.'},\n{t:243.601, text:'Not a problem.'},\n{t:244.601, text:'I\\'ll make a note of that.'},\n{t:247.060, text:'Actually, though, just thinking about the'},\n{t:250.294, text:'kitchen, what can I expect from a rental property?'},\n{t:254.241, text:'I mean, what kind of equipment is provided?'},\n{t:258.081, text:'Well, the normal thing is that you get a stove.'},\n{t:262.121, text:'I think that\\'s a cooker in British English.'},\n{t:265.041, text:'Okay, good to know.'},\n{t:267.241, text:'But how about a fridge?'},\n{t:269.321, text:'We\\'ll be selling ours before we come.'},\n{t:272.161, text:'So if possible, we\\'d like the apartment to have one for when we arrive.'},\n{t:277.961, text:'I can certainly add that to the form.'},\n{t:281.361, text:'If there\\'s any other whiteware that you need, like a dishwasher, for example, there'},\n{t:287.320, text:'are plenty of stores here that will arrange delivery on the same day as purchase.'},\n{t:292.481, text:'Thanks.'},\n{t:293.530, text:'Hopefully, we won\\'t need to buy too many things.'},\n{t:297.650, text:'Now, how about location?'},\n{t:301.041, text:'Have you done any research into the Fairfield area?'},\n{t:304.841, text:'Not that much so far.'},\n{t:307.180, text:'Well, you mentioned you have a boy.'},\n{t:310.001, text:'I imagine you\\'d like to be fairly close to a school.'},\n{t:314.121, text:'Good idea.'},\n{t:315.361, text:'That would help.'},\n{t:317.001, text:'What\\'s public transport like in Fairfield?'},\n{t:320.081, text:'Is it easy to get around?'},\n{t:322.601, text:'The bus service is pretty comprehensive.'},\n{t:325.881, text:'There are plenty of local routes, services into the city and out of town.'},\n{t:330.930, text:'Okay, and for a two-bedroom apartment, what sort of rent should we expect to pay?'},\n{t:337.970, text:'Well, looking at the properties we have at the moment, prices start from around $730'},\n{t:345.361, text:'per month, and, depending on the area, can go up to $1,200.'},\n{t:351.201, text:'That\\'s too much.'},\n{t:352.881, text:'Something halfway would be better.'},\n{t:355.641, text:'So would your limit be, say, $950?'},\n{t:360.081, text:'I\\'d say so, yes.'},\n{t:362.521, text:'Can I ask if you smoke or if you have any pets?'},\n{t:366.561, text:'No to both questions, but I do have one more request, please.'},\n{t:371.961, text:'Yes.'},\n{t:372.961, text:'Well, I\\'ve also been offered a job at Victoria'},\n{t:376.739, text:'General Hospital, and I suspect I\\'ll be working'},\n{t:380.601, text:'nights occasionally, so what I really need from any apartment is for it to be quiet.'},\n{t:388.481, text:'So I can catch up on sleep if necessary during the day.'},\n{t:393.281, text:'Congratulations on the job offer.'},\n{t:395.881, text:'I\\'ll add your request to the form.'},\n{t:399.520, text:'Well, what I\\'ll do is compile a list of suitable'},\n{t:403.634, text:'properties for you and send them via email.'},\n{t:407.321, text:'Can I just ask, how did you hear about us?'},\n{t:410.730, text:'Obviously, not from our commercials, if you\\'re living in the UK.'},\n{t:415.121, text:'Actually, it was a friend of ours.'},\n{t:417.601, text:'He spent a few months in Fairfield a couple of'},\n{t:420.714, text:'years ago, and he pointed us in the direction of your website.'},\n{t:425.480, text:'\"Well, it\\'s good to be recommended.'},\n{t:429.100, text:'So what I\\'ll do is... \" That is the end of section 1.'},\n{t:435.881, text:'You now have half a minute to check your answers.'},\n{t:468.310, text:'Now turn to section 2.'},\n","rawQuestions":"Questions 1–10 \nComplete the notes below.\nWrite \u003cb>ONE WORD AND/OR A NUMBER\u003c/b> for each answer.\nACCOMMODATION FORM: RENTAL PROPERTIES\nExample\nName: Jane Ryder \nContact phone number: (0044) 1 _______________ [play:113.200]\nEmail address: richard@ 2 _______________ .co.uk [play:159.360]\nOccupation: a local 3 _______________ [play:182.081]\nType of accommodation: a 2-bedroom apartment wanted (must have its own 4 _______________) [play:213.190]\nno 5 _______________ required (family bringing theirs) [play:230.106]\na 6 _______________ in the kitchen is preferable [play:267.241]\nPreferred location: near a 7 _______________ [play:310.001]\nMaximum rent: £8 _______________ per month [play:355.641]\nOther requests: the accommodation has to be 9 _______________ in the daytime [play:380.601]\nHow did you first hear about us? through a 10 _______________ [play:415.121]\n\n","prevocab":"","processedPreVocab":"","hasPreVocab":false},{"name":"City Transport Lost Property Enquiry","audio":"https://engnovate.com/wp-content/uploads/2026/04/official_cambridge_guide_to_ielts_academic_listening_test_5_1.mp3","image":"","hideTrans":false,"removeDragged":false,"imgLeft":false,"answerKey":{"input-auto-0":"white","input-auto-1":"office","input-auto-2":"camera","input-auto-3":"umbrella","input-auto-4":"13th May / 13 May / May 13 / May 13th","input-auto-5":"airport","input-auto-6":"taxi","input-auto-7":"Docherty","input-auto-8":"River","input-auto-9":"07979605437"},"itemImages":{},"processedTranscript":"\u003cp data-time=\"0.000\">Recording 55.\u003c/p>\n\u003cp data-time=\"2.720\">You will hear a phone conversation in which your woman talks\u003c/p>\n\u003cp data-time=\"6.170\">to a public transport official about something she has lost.\u003c/p>\n\u003cp data-time=\"10.700\">First, you have some time to look at questions one to four.\u003c/p>\n\u003cp data-time=\"34.970\">Oh, city transport lost property.\u003c/p>\n\u003cp data-time=\"37.830\">How can I help you?\u003c/p>\n\u003cp data-time=\"39.310\">Oh, hello.\u003c/p>\n\u003cp data-time=\"40.670\">Yes, I\\'m calling about a suitcase I lost yesterday.\u003c/p>\n\u003cp data-time=\"45.770\">I don\\'t suppose I\\'ll get it back, but I thought I\\'d try.\u003c/p>\n\u003cp data-time=\"49.131\">Well, some people do hand lost items in.\u003c/p>\n\u003cp data-time=\"53.310\">So you might be lucky.\u003c/p>\n\u003cp data-time=\"55.350\">Let\\'s put the details into the computer.\u003c/p>\n\u003cp data-time=\"58.250\">Okay.\u003c/p>\n\u003cp data-time=\"59.270\">Right.\u003c/p>\n\u003cp data-time=\"60.470\">So let\\'s start with a description of the suitcase.\u003c/p>\n\u003cp data-time=\"64.930\">Okay.\u003c/p>\n\u003cp data-time=\"65.530\">Well, it\\'s small.\u003c/p>\n\u003cp data-time=\"67.270\">And it\\'s the type you can pull along on wheels.\u003c/p>\n\u003cp data-time=\"70.411\">How about the colour?\u003c/p>\n\u003cp data-time=\"73.010\">Yes, it\\'s black.\u003c/p>\n\u003cp data-time=\"75.070\">But not exactly plain black.\u003c/p>\n\u003cp data-time=\"77.710\">It has some narrow stripes down it.\u003c/p>\n\u003cp data-time=\"81.310\">Sort of grey.\u003c/p>\n\u003cp data-time=\"82.930\">Actually no, they\\'re white.\u003c/p>\n\u003cp data-time=\"84.550\">Now I think about it.\u003c/p>\n\u003cp data-time=\"86.750\">Okay.\u003c/p>\n\u003cp data-time=\"87.170\">I\\'ll just add that information.\u003c/p>\n\u003cp data-time=\"90.630\">Now, were there any items inside it?\u003c/p>\n\u003cp data-time=\"94.131\">Yes, I had a big bunch of keys in there.\u003c/p>\n\u003cp data-time=\"98.230\">Luckily, my assistant manager has an identical set.\u003c/p>\n\u003cp data-time=\"102.250\">So she\\'s going out this morning to get some copies made.\u003c/p>\n\u003cp data-time=\"106.410\">So therefore your office.\u003c/p>\n\u003cp data-time=\"108.670\">That\\'s right.\u003c/p>\n\u003cp data-time=\"110.050\">My house keys were in my pocket.\u003c/p>\n\u003cp data-time=\"112.470\">Thank goodness.\u003c/p>\n\u003cp data-time=\"115.010\">Anything else?\u003c/p>\n\u003cp data-time=\"116.990\">There were a lot of documents, but they\\'re saved on my laptop anyway.\u003c/p>\n\u003cp data-time=\"121.931\">So they don\\'t matter so much.\u003c/p>\n\u003cp data-time=\"126.070\">But the thing I\\'m really worried about, I mean I haven\\'t\u003c/p>\n\u003cp data-time=\"129.961\">even taken it out of the box yet, is a camera I just bought.\u003c/p>\n\u003cp data-time=\"134.590\">That\\'s really why I\\'m calling.\u003c/p>\n\u003cp data-time=\"136.790\">I can\\'t believe I\\'ve lost it already.\u003c/p>\n\u003cp data-time=\"139.830\">I see.\u003c/p>\n\u003cp data-time=\"141.370\">Well, let\\'s hope we can find it for you.\u003c/p>\n\u003cp data-time=\"144.910\">Was there anything else?\u003c/p>\n\u003cp data-time=\"146.610\">I don\\'t think so.\u003c/p>\n\u003cp data-time=\"147.991\">Any credit cards?\u003c/p>\n\u003cp data-time=\"150.250\">They were in my handbag.\u003c/p>\n\u003cp data-time=\"151.930\">And I had my passport inside my jacket pocket.\u003c/p>\n\u003cp data-time=\"158.170\">Before you hear the rest of the conversation, you will\u003c/p>\n\u003cp data-time=\"161.430\">have some time to look at the questions five to ten.\u003c/p>\n\u003cp data-time=\"194.820\">Now listen and answer questions five to ten.\u003c/p>\n\u003cp data-time=\"200.540\">Money, clothing, any personal items?\u003c/p>\n\u003cp data-time=\"205.660\">Let me think.\u003c/p>\n\u003cp data-time=\"207.800\">I had an umbrella.\u003c/p>\n\u003cp data-time=\"209.240\">It was black, no blue, but obviously that isn\\'t as important as the other things.\u003c/p>\n\u003cp data-time=\"215.100\">No, but it all helps us identify your property and get it back to you.\u003c/p>\n\u003cp data-time=\"221.440\">Anyway, I just need to ask you for some basic details about your journey.\u003c/p>\n\u003cp data-time=\"226.681\">So it was yesterday, was it?\u003c/p>\n\u003cp data-time=\"230.160\">That\\'s right.\u003c/p>\n\u003cp data-time=\"231.280\">In the afternoon, around 2pm, maybe 2.30.\u003c/p>\n\u003cp data-time=\"236.620\">Okay, so that had been made the 13th.\u003c/p>\n\u003cp data-time=\"240.320\">Yes, I was heading to Highbury.\u003c/p>\n\u003cp data-time=\"242.960\">That\\'s where I live.\u003c/p>\n\u003cp data-time=\"244.980\">All right, and you mentioned a passport, I think.\u003c/p>\n\u003cp data-time=\"249.580\">So you were coming from the airport, I presume.\u003c/p>\n\u003cp data-time=\"252.461\">Yes, and I was looking forward to getting homes\u003c/p>\n\u003cp data-time=\"255.711\">so much and what with being tired and everything.\u003c/p>\n\u003cp data-time=\"259.860\">I think that\\'s why I just forgot about the case.\u003c/p>\n\u003cp data-time=\"263.280\">And how were you travelling when you lost your property?\u003c/p>\n\u003cp data-time=\"267.300\">I mean, what kind of transport were you using?\u003c/p>\n\u003cp data-time=\"271.480\">I thought about getting the train, but that would have\u003c/p>\n\u003cp data-time=\"274.543\">meant a bus journey as well, and I couldn\\'t be bothered.\u003c/p>\n\u003cp data-time=\"278.460\">So I decided to take a taxi eventually.\u003c/p>\n\u003cp data-time=\"281.560\">That\\'s where I must have left it.\u003c/p>\n\u003cp data-time=\"284.500\">Well, that\\'s good news.\u003c/p>\n\u003cp data-time=\"286.220\">In a way, it\\'s more likely that a driver would have found it and handed it in.\u003c/p>\n\u003cp data-time=\"292.260\">I hope so.\u003c/p>\n\u003cp data-time=\"294.120\">Well, I need your personal details now.\u003c/p>\n\u003cp data-time=\"297.360\">Can I have your full name, please?\u003c/p>\n\u003cp data-time=\"299.961\">Yes, it\\'s Lisa Dockety.\u003c/p>\n\u003cp data-time=\"303.180\">I\\'ll spell that for you.\u003c/p>\n\u003cp data-time=\"305.240\">It\\'s D-O-C-H-E-R-T-Y.\u003c/p>\n\u003cp data-time=\"311.020\">Thank you, and next, if I could have your address, the best\u003c/p>\n\u003cp data-time=\"315.520\">address to send you the property if we manage to locate it.\u003c/p>\n\u003cp data-time=\"320.021\">Sure, it\\'s number 15A River Road.\u003c/p>\n\u003cp data-time=\"324.640\">And that\\'s hybrid, as I said.\u003c/p>\n\u003cp data-time=\"327.840\">Thank you, just a moment.\u003c/p>\n\u003cp data-time=\"330.620\">There\\'s just one final thing that\\'s your phone number.\u003c/p>\n\u003cp data-time=\"335.380\">I guess my mobile would be best.\u003c/p>\n\u003cp data-time=\"338.180\">Hang on.\u003c/p>\n\u003cp data-time=\"339.080\">I can never remember my own number.\u003c/p>\n\u003cp data-time=\"341.800\">Okay, I\\'ve got it.\u003c/p>\n\u003cp data-time=\"344.000\">It\\'s 07-9-7-9-6-05-437.\u003c/p>\n\u003cp data-time=\"354.860\">Very well.\u003c/p>\n\u003cp data-time=\"356.200\">I think that\\'s everything we need at this end.\u003c/p>\n\u003cp data-time=\"359.980\">I\\'ll have a look at the data on.\u003c/p>\n\u003cp data-time=\"365.170\">That is the end of Section 1.\u003c/p>\n\u003cp data-time=\"367.850\">You now have half a minute to check your answers.\u003c/p>\n\u003cp data-time=\"400.280\">Now turn to Section 2.\u003c/p>\n","processedQuestions":"\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Questions 1–10\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Complete the form below.\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Write \u003cb>ONE WORD AND/OR A NUMBER\u003c/b> for each answer.\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">City Transport Lost Property Enquiry\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Example\u003c/h3>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Main item lost: suitcase\u003c/h3>\u003cdiv id=\"q-auto-0\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Description of main item: black with thin\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">1\u003c/span>\u003cinput type=\"text\" id=\"input-auto-0\" class=\"mx-1 inline-block align-middle\"> stripes\u003c/div>\u003c/div>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Other items:\u003c/h3>\u003cdiv id=\"q-auto-1\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">•\ta set of\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">2\u003c/span>\u003cinput type=\"text\" id=\"input-auto-1\" class=\"mx-1 inline-block align-middle\"> keys\u003c/div>\u003c/div>\u003cp class=\"mb-2 text-gray-700 text-sm ml-2\">•\tsome documents\u003c/p>\u003cdiv id=\"q-auto-2\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">•\ta\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">3\u003c/span>\u003cinput type=\"text\" id=\"input-auto-2\" class=\"mx-1 inline-block align-middle\"> in a box\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-3\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">•\ta blue\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">4\u003c/span>\u003cinput type=\"text\" id=\"input-auto-3\" class=\"mx-1 inline-block align-middle\">\u003c/div>\u003c/div>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Journey details\u003c/h3>\u003cdiv id=\"q-auto-4\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Date and time: 2.00–2.30 pm on\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">5\u003c/span>\u003cinput type=\"text\" id=\"input-auto-4\" class=\"mx-1 inline-block align-middle\">\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-5\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Basic route: caller travelled from the\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">6\u003c/span>\u003cinput type=\"text\" id=\"input-auto-5\" class=\"mx-1 inline-block align-middle\"> to Highbury\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-6\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Mode of travel: caller thinks she left the suitcase in a\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">7\u003c/span>\u003cinput type=\"text\" id=\"input-auto-6\" class=\"mx-1 inline-block align-middle\">\u003c/div>\u003c/div>\u003ch3 class=\"font-bold text-gray-800 mt-4 mb-2 uppercase text-sm border-b-2 border-gray-200 pb-1\">Personal details\u003c/h3>\u003cdiv id=\"q-auto-7\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Name: Lisa\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">8\u003c/span>\u003cinput type=\"text\" id=\"input-auto-7\" class=\"mx-1 inline-block align-middle\">\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-8\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Address: 15A\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">9\u003c/span>\u003cinput type=\"text\" id=\"input-auto-8\" class=\"mx-1 inline-block align-middle\"> Rd, Highbury\u003c/div>\u003c/div>\u003cdiv id=\"q-auto-9\" class=\"question-block mb-3 p-2 relative\">\u003cdiv class=\"flex-1 leading-relaxed\">Phone number:\u003cspan class=\"bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[11px] font-bold mx-1 shadow-sm border border-blue-200 inline-block align-middle\">10\u003c/span>\u003cinput type=\"text\" id=\"input-auto-9\" class=\"mx-1 inline-block align-middle\">\u003c/div>\u003c/div>","totalQs":10,"rawTranscript":"{t:0.000, text:'Recording 55.'},\n{t:2.720, text:'You will hear a phone conversation in which your woman talks'},\n{t:6.170, text:'to a public transport official about something she has lost.'},\n{t:10.700, text:'First, you have some time to look at questions one to four.'},\n{t:34.970, text:'Oh, city transport lost property.'},\n{t:37.830, text:'How can I help you?'},\n{t:39.310, text:'Oh, hello.'},\n{t:40.670, text:'Yes, I\\'m calling about a suitcase I lost yesterday.'},\n{t:45.770, text:'I don\\'t suppose I\\'ll get it back, but I thought I\\'d try.'},\n{t:49.131, text:'Well, some people do hand lost items in.'},\n{t:53.310, text:'So you might be lucky.'},\n{t:55.350, text:'Let\\'s put the details into the computer.'},\n{t:58.250, text:'Okay.'},\n{t:59.270, text:'Right.'},\n{t:60.470, text:'So let\\'s start with a description of the suitcase.'},\n{t:64.930, text:'Okay.'},\n{t:65.530, text:'Well, it\\'s small.'},\n{t:67.270, text:'And it\\'s the type you can pull along on wheels.'},\n{t:70.411, text:'How about the colour?'},\n{t:73.010, text:'Yes, it\\'s black.'},\n{t:75.070, text:'But not exactly plain black.'},\n{t:77.710, text:'It has some narrow stripes down it.'},\n{t:81.310, text:'Sort of grey.'},\n{t:82.930, text:'Actually no, they\\'re white.'},\n{t:84.550, text:'Now I think about it.'},\n{t:86.750, text:'Okay.'},\n{t:87.170, text:'I\\'ll just add that information.'},\n{t:90.630, text:'Now, were there any items inside it?'},\n{t:94.131, text:'Yes, I had a big bunch of keys in there.'},\n{t:98.230, text:'Luckily, my assistant manager has an identical set.'},\n{t:102.250, text:'So she\\'s going out this morning to get some copies made.'},\n{t:106.410, text:'So therefore your office.'},\n{t:108.670, text:'That\\'s right.'},\n{t:110.050, text:'My house keys were in my pocket.'},\n{t:112.470, text:'Thank goodness.'},\n{t:115.010, text:'Anything else?'},\n{t:116.990, text:'There were a lot of documents, but they\\'re saved on my laptop anyway.'},\n{t:121.931, text:'So they don\\'t matter so much.'},\n{t:126.070, text:'But the thing I\\'m really worried about, I mean I haven\\'t'},\n{t:129.961, text:'even taken it out of the box yet, is a camera I just bought.'},\n{t:134.590, text:'That\\'s really why I\\'m calling.'},\n{t:136.790, text:'I can\\'t believe I\\'ve lost it already.'},\n{t:139.830, text:'I see.'},\n{t:141.370, text:'Well, let\\'s hope we can find it for you.'},\n{t:144.910, text:'Was there anything else?'},\n{t:146.610, text:'I don\\'t think so.'},\n{t:147.991, text:'Any credit cards?'},\n{t:150.250, text:'They were in my handbag.'},\n{t:151.930, text:'And I had my passport inside my jacket pocket.'},\n{t:158.170, text:'Before you hear the rest of the conversation, you will'},\n{t:161.430, text:'have some time to look at the questions five to ten.'},\n{t:194.820, text:'Now listen and answer questions five to ten.'},\n{t:200.540, text:'Money, clothing, any personal items?'},\n{t:205.660, text:'Let me think.'},\n{t:207.800, text:'I had an umbrella.'},\n{t:209.240, text:'It was black, no blue, but obviously that isn\\'t as important as the other things.'},\n{t:215.100, text:'No, but it all helps us identify your property and get it back to you.'},\n{t:221.440, text:'Anyway, I just need to ask you for some basic details about your journey.'},\n{t:226.681, text:'So it was yesterday, was it?'},\n{t:230.160, text:'That\\'s right.'},\n{t:231.280, text:'In the afternoon, around 2pm, maybe 2.30.'},\n{t:236.620, text:'Okay, so that had been made the 13th.'},\n{t:240.320, text:'Yes, I was heading to Highbury.'},\n{t:242.960, text:'That\\'s where I live.'},\n{t:244.980, text:'All right, and you mentioned a passport, I think.'},\n{t:249.580, text:'So you were coming from the airport, I presume.'},\n{t:252.461, text:'Yes, and I was looking forward to getting homes'},\n{t:255.711, text:'so much and what with being tired and everything.'},\n{t:259.860, text:'I think that\\'s why I just forgot about the case.'},\n{t:263.280, text:'And how were you travelling when you lost your property?'},\n{t:267.300, text:'I mean, what kind of transport were you using?'},\n{t:271.480, text:'I thought about getting the train, but that would have'},\n{t:274.543, text:'meant a bus journey as well, and I couldn\\'t be bothered.'},\n{t:278.460, text:'So I decided to take a taxi eventually.'},\n{t:281.560, text:'That\\'s where I must have left it.'},\n{t:284.500, text:'Well, that\\'s good news.'},\n{t:286.220, text:'In a way, it\\'s more likely that a driver would have found it and handed it in.'},\n{t:292.260, text:'I hope so.'},\n{t:294.120, text:'Well, I need your personal details now.'},\n{t:297.360, text:'Can I have your full name, please?'},\n{t:299.961, text:'Yes, it\\'s Lisa Dockety.'},\n{t:303.180, text:'I\\'ll spell that for you.'},\n{t:305.240, text:'It\\'s D-O-C-H-E-R-T-Y.'},\n{t:311.020, text:'Thank you, and next, if I could have your address, the best'},\n{t:315.520, text:'address to send you the property if we manage to locate it.'},\n{t:320.021, text:'Sure, it\\'s number 15A River Road.'},\n{t:324.640, text:'And that\\'s hybrid, as I said.'},\n{t:327.840, text:'Thank you, just a moment.'},\n{t:330.620, text:'There\\'s just one final thing that\\'s your phone number.'},\n{t:335.380, text:'I guess my mobile would be best.'},\n{t:338.180, text:'Hang on.'},\n{t:339.080, text:'I can never remember my own number.'},\n{t:341.800, text:'Okay, I\\'ve got it.'},\n{t:344.000, text:'It\\'s 07-9-7-9-6-05-437.'},\n{t:354.860, text:'Very well.'},\n{t:356.200, text:'I think that\\'s everything we need at this end.'},\n{t:359.980, text:'I\\'ll have a look at the data on.'},\n{t:365.170, text:'That is the end of Section 1.'},\n{t:367.850, text:'You now have half a minute to check your answers.'},\n{t:400.280, text:'Now turn to Section 2.'},\n","rawQuestions":"Questions 1–10 \nComplete the form below.\nWrite \u003cb>ONE WORD AND/OR A NUMBER\u003c/b> for each answer.\nCity Transport Lost Property Enquiry\nExample\nMain item lost: suitcase\nDescription of main item: black with thin 1 ______ stripes\nOther items: \n•\ta set of 2 ______ keys\n•\tsome documents\n•\ta 3 ______ in a box\n•\ta blue 4 ______\nJourney details\nDate and time: 2.00–2.30 pm on 5 ______\nBasic route: caller travelled from the 6 ______ to Highbury\nMode of travel: caller thinks she left the suitcase in a 7 ______\nPersonal details\nName: Lisa 8 ______\nAddress: 15A 9 ______ Rd, Highbury\nPhone number: 10 ______\n","prevocab":"","processedPreVocab":"","hasPreVocab":false}];
+        let currentLessonIndex = 0;
+        let timerInterval; let seconds = 0;
+        let activePara = null;
+
+        function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+        function dragLeave(ev) { ev.currentTarget.classList.remove('drag-over'); }
+        
+        function drag(ev) { 
+            const val = ev.target.dataset.val || ev.target.innerText.split('.')[0].trim();
+            ev.dataTransfer.setData("text", val); 
+            ev.dataTransfer.setData("sourceId", ev.target.id);
+        }
+        
+        function drop(ev) { 
+            ev.preventDefault(); 
+            ev.currentTarget.classList.remove('drag-over'); 
+            const data = ev.dataTransfer.getData("text"); 
+            const sourceId = ev.dataTransfer.getData("sourceId");
+            const lesson = lessonsData[currentLessonIndex];
+            
+            // Nhận diện xem đây có phải là Option của dạng Vocab hay không
+            const isVocab = sourceId && sourceId.includes('drag-vocab');
+
+            // Hoàn trả lại item cũ nếu drop-zone đã có item
+            if ((lesson.removeDragged || isVocab) && ev.currentTarget.dataset.sourceId) {
+                const oldSource = document.getElementById(ev.currentTarget.dataset.sourceId);
+                if(oldSource) {
+                    oldSource.classList.remove('used');
+                    oldSource.style.display = ''; // Hiện lại nếu bị ẩn
+                }
+            }
+
+            ev.currentTarget.innerHTML = `<span class="dropped-item">${data}</span>`; 
+            ev.currentTarget.dataset.value = data.split('.')[0].trim(); 
+            ev.currentTarget.dataset.sourceId = sourceId;
+
+            // Xử lý biến mất/làm mờ item mới kéo vào
+            if ((lesson.removeDragged || isVocab) && sourceId) {
+                const sourceEl = document.getElementById(sourceId);
+                if(sourceEl) {
+                    if (isVocab) {
+                        sourceEl.style.display = 'none'; // Biến mất HOÀN TOÀN với phần Vocab
+                    } else {
+                        sourceEl.classList.add('used'); // Chỉ làm mờ, gạch ngang với dạng kéo thả khác
+                    }
+                }
+            }
+            updatePaletteState();
+        }
+
+        // Xử lý Click vào Drop Zone để trả item về danh sách gốc
+        function handleDropZoneClick(ev) {
+            const lesson = lessonsData[currentLessonIndex];
+            const dz = ev.currentTarget;
+            const sourceId = dz.dataset.sourceId;
+            const isVocab = sourceId && sourceId.includes('drag-vocab');
+
+            // Nếu không phải vocab và cũng không tick checkbox "Ẩn Opt Đã Kéo" thì bỏ qua
+            if (!lesson.removeDragged && !isVocab) return;
+            
+            if (sourceId) {
+                const sourceEl = document.getElementById(sourceId);
+                if (sourceEl) {
+                    sourceEl.classList.remove('used');
+                    sourceEl.style.display = ''; // Phục hồi hiển thị cho item
+                }
+                dz.innerHTML = '';
+                dz.dataset.value = '';
+                dz.dataset.sourceId = '';
+            }
+            updatePaletteState();
+        }
+		
+		window.toggleVocabContent = function(btn) {
+			const block = btn.closest('.vocab-block');
+			const contentWrap = block.querySelector('.vocab-content-wrap');
+			const isSmall = btn.classList.contains('text-[9px]'); 
+			
+			if (contentWrap.classList.contains('hidden')) {
+				// Mở ra
+				contentWrap.classList.remove('hidden');
+				btn.innerHTML = isSmall ? '<i class="fa-solid fa-eye-slash"></i> Hide' : '<i class="fa-solid fa-eye-slash mr-1"></i> Hide';
+				btn.classList.replace('bg-sky-500', 'bg-slate-500');
+				btn.classList.replace('hover:bg-sky-600', 'hover:bg-slate-600');
+			} else {
+				// Ẩn đi
+				contentWrap.classList.add('hidden');
+				btn.innerHTML = isSmall ? '<i class="fa-solid fa-eye"></i> Show' : '<i class="fa-solid fa-eye mr-1"></i> Show';
+				btn.classList.replace('bg-slate-500', 'bg-sky-500');
+				btn.classList.replace('hover:bg-slate-600', 'hover:bg-sky-600');
+			}
+		};
+		
+		window.checkVocabMatching = function(btn) {
+            const block = btn.closest('.vocab-block');
+            if (!block) return;
+            
+            const dropZones = block.querySelectorAll('.drop-zone');
+            
+            let correct = 0;
+            let total = dropZones.length;
+            
+            // Xóa các nút show key và thông báo cũ nếu học sinh bấm check nhiều lần
+            block.querySelectorAll('.vocab-show-key-btn, .correct-feedback').forEach(e => e.remove());
+            
+            dropZones.forEach(el => {
+                el.classList.remove('correct-answer', 'incorrect-answer');
+                
+                // Lấy đáp án đúng đã được gài sẵn
+                const correctVal = (el.dataset.answer || "").trim().toLowerCase();
+                let userVal = (el.dataset.value || "").trim().toLowerCase();
+                
+                if (userVal === correctVal && userVal !== "") {
+                    correct++;
+                    el.classList.add('correct-answer');
+                } else {
+                    el.classList.add('incorrect-answer');
+                    
+                    // Thêm nút Show Key bên cạnh ô làm sai
+                    if(correctVal) {
+                        const showKeyBtn = document.createElement('button');
+                        showKeyBtn.className = 'vocab-show-key-btn ml-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-[10px] px-2 py-1 rounded font-bold transition inline-block align-middle shadow-sm border border-gray-300';
+                        showKeyBtn.innerHTML = '<i class="fa-solid fa-key"></i> Show Key';
+                        showKeyBtn.onclick = function() {
+                            const div = document.createElement('div');
+                            div.className = 'correct-feedback mt-1';
+                            div.innerText = `Key: ${el.dataset.answer}`;
+                            el.after(div);
+                            this.remove(); // Ẩn nút đi sau khi đã show
+                        };
+                        el.after(showKeyBtn);
+                    }
+                }
+            });
+            
+            // Hiển thị điểm số phần Vocab
+            const feedback = block.querySelector('.vocab-feedback');
+            if (feedback) {
+                feedback.innerText = `Kết quả Vocab: ${correct}/${total} câu chính xác`;
+                feedback.classList.remove('hidden');
+            }
+        };
+
+        // Thay thế hàm switchLesson cũ bằng hàm mới này
+        // Hàm chụp ảnh trạng thái bài làm
+        window.saveCurrentStateToMemory = () => {
+            if (currentLessonIndex === undefined || currentLessonIndex === null || !lessonsData[currentLessonIndex]) return;
+
+            // Đồng bộ value cho input text và gap-fill
+            document.querySelectorAll('#questions-content input[type="text"]').forEach(el => {
+                el.setAttribute('value', el.value || '');
+            });
+            // Đồng bộ trạng thái checked cho trắc nghiệm (radio/checkbox)
+            document.querySelectorAll('#questions-content input[type="checkbox"], #questions-content input[type="radio"]').forEach(el => {
+                if(el.checked) el.setAttribute('checked', 'checked');
+                else el.removeAttribute('checked');
+            });
+
+            const qContent = document.getElementById('questions-content');
+            if (qContent && qContent.innerHTML.trim() !== '') {
+                lessonsData[currentLessonIndex].savedDOM = {
+                    questions: qContent.innerHTML,
+                    timer: seconds, // Lưu lại số giây đã đếm
+                    resultMessage: document.getElementById('result-message').innerHTML,
+                    resultMessageHidden: document.getElementById('result-message').classList.contains('hidden')
+                };
+            }
+        };
+
+        // Thay thế hàm switchLesson cũ bằng hàm mới này
+        function switchLesson(index) {
+            // 1. Lưu bài cũ trước khi chuyển đi (ngăn lưu nhầm mảng rỗng khi ở sảnh chờ)
+            const qContent = document.getElementById('questions-content');
+            if (typeof saveCurrentStateToMemory === 'function' && qContent && qContent.innerHTML.trim() !== '' && !document.body.classList.contains('in-dashboard')) {
+                saveCurrentStateToMemory();
+            }
+
+            currentLessonIndex = parseInt(index);
+            const lesson = lessonsData[currentLessonIndex];
+            
+            // 2. Render lại Audio, Transcript và cấu trúc cột
+            renderLesson(lesson);
+			const btnPreVocab = document.getElementById('btn-prevocab');
+			const bodyPreVocab = document.getElementById('prevocab-body');
+			if (lesson.hasPreVocab) {
+				btnPreVocab.classList.remove('hidden');
+				btnPreVocab.classList.add('flex');
+				bodyPreVocab.innerHTML = lesson.processedPreVocab;
+			} else {
+				btnPreVocab.classList.add('hidden');
+				btnPreVocab.classList.remove('flex');
+				bodyPreVocab.innerHTML = '';
+			}
+            const qsLabel = document.getElementById('top-total-qs');
+            if(qsLabel) qsLabel.innerText = (lesson.totalQs || 0) + ' câu';
+            
+            // 3. KIỂM TRA: Phục hồi trạng thái câu hỏi & đáp án nếu đã lưu
+            if (lesson.savedDOM) {
+                // Đắp lại HTML các đáp án đã điền/kéo thả
+                document.getElementById('questions-content').innerHTML = lesson.savedDOM.questions;
+                
+                // Khôi phục khung kết quả Xanh/Đỏ
+                const msg = document.getElementById('result-message');
+                msg.innerHTML = lesson.savedDOM.resultMessage;
+                if(lesson.savedDOM.resultMessageHidden) msg.classList.add('hidden');
+                else msg.classList.remove('hidden');
+
+                // Khôi phục đồng hồ tính giờ
+                if(timerInterval) clearInterval(timerInterval);
+                seconds = lesson.savedDOM.timer || 0;
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    const m = Math.floor(seconds/60).toString().padStart(2, '0');
+                    const s = (seconds%60).toString().padStart(2, '0');
+                    document.getElementById('timer').innerText = `${m}:${s}`;
+                }, 1000);
+            } else {
+                // Chưa có dữ liệu lưu thì tạo mới từ đầu
+                resetState();
+            }
+			// Đồng bộ lại nút Nộp Bài trên Header theo trạng thái của bài hiện tại
+    const btn = document.querySelector('button[onclick="checkResults()"]');
+    if (btn) {
+        if (lesson.submitAttempt === 2 && !lesson.lastResult) {
+            btn.innerHTML = '<i class="fa-solid fa-rotate-right mr-1"></i> Nộp Lần 2';
+            btn.className = 'bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-1.5 rounded shadow transition';
+            btn.disabled = false;
+        } else if (lesson.lastResult) {
+            btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Đã Nộp';
+            btn.className = 'bg-gray-500 text-white text-sm font-bold px-4 py-1.5 rounded shadow cursor-not-allowed opacity-70';
+            btn.disabled = true;
+        } else {
+            btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Nộp Bài';
+            btn.className = 'bg-green-600 hover:bg-green-700 text-white text-sm font-bold px-4 py-1.5 rounded shadow transition';
+            btn.disabled = false;
+        }
+    }
+	buildPalette(lesson);
+    const bottomActions = document.getElementById('bottom-actions');
+    const btnNext = document.getElementById('btn-next-lesson');
+    if(lesson.lastResult || lesson.submitAttempt >= 2) {
+        bottomActions.classList.remove('hidden');
+        
+        const filterVal = document.querySelector('input[name="lesson_filter"]:checked').value;
+        if (filterVal === 'ALL') {
+            if (currentTestSequence.length > 0) {
+                btnNext.classList.remove('hidden');
+                let currentIndex = currentTestSequence.indexOf(currentLessonIndex);
+                if (currentIndex < currentTestSequence.length - 1) {
+                    btnNext.innerText = `Bài tiếp theo (Phím ➔) ❯❯`;
+                } else {
+                    btnNext.innerText = `Nộp & Xem Report ❯❯`;
+                }
+            } else {
+                btnNext.classList.add('hidden');
+            }
+        } else {
+            if (filteredIndexes.length > 1) {
+                btnNext.classList.remove('hidden');
+                btnNext.innerText = `Bài ngẫu nhiên tiếp theo (Phím ➔) ❯❯`;
+            } else btnNext.classList.add('hidden');
+        }
+    } else {
+        bottomActions.classList.add('hidden');
+    }
+	// --- LOGIC HIỂN THỊ NÚT NEXT/PREV CHO BÀI CỤ THỂ ---
+const specificNav = document.getElementById('specific-lesson-nav');
+const btnPrevSpec = document.getElementById('btn-prev-specific');
+const btnNextSpec = document.getElementById('btn-next-specific');
+const prevText = document.getElementById('prev-specific-text');
+const nextText = document.getElementById('next-specific-text');
+
+if (window.isSpecificLessonMode && specificNav) {
+    specificNav.classList.remove('hidden');
+    specificNav.classList.add('flex');
+    
+    // Nút Previous
+    if (currentLessonIndex > 0) {
+        btnPrevSpec.classList.remove('hidden');
+        prevText.innerText = lessonsData[currentLessonIndex - 1].name;
+    } else {
+        btnPrevSpec.classList.add('hidden'); // Ẩn nút nếu đang ở bài đầu tiên
+    }
+    
+    // Nút Next
+    if (currentLessonIndex < lessonsData.length - 1) {
+        btnNextSpec.classList.remove('hidden');
+        nextText.innerText = lessonsData[currentLessonIndex + 1].name;
+    } else {
+        btnNextSpec.classList.add('hidden'); // Ẩn nút nếu đang ở bài cuối cùng
+    }
+} else if (specificNav) {
+    specificNav.classList.add('hidden');
+    specificNav.classList.remove('flex');
+}
+        }
+
+        function renderLesson(lesson) {
+            const audio = document.getElementById('audio');
+            audio.src = lesson.audio;
+            document.getElementById('transcript').innerHTML = lesson.processedTranscript;
+            document.getElementById('questions-content').innerHTML = lesson.processedQuestions;
+
+            const transWrap = document.getElementById('transcript-container');
+            const transPlace = document.getElementById('transcript-placeholder');
+            document.getElementById('trans-btn-container').innerHTML = `<span class="text-xs text-slate-400"><i class="fa-solid fa-music mr-1"></i>Audio Source</span>
+                <button onclick="toggleTrans()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded text-xs transition border border-slate-500">${lesson.hideTrans ? 'Hiện Văn Bản' : 'Ẩn Văn Bản'}</button>`;
+            
+            if (lesson.hideTrans) { transWrap.classList.add('hidden'); transPlace.classList.remove('hidden'); }
+            else { transWrap.classList.remove('hidden'); transPlace.classList.add('hidden'); }
+			
+            const paneTrans = document.getElementById('pane-transcript');
+            const paneQuest = document.getElementById('pane-questions');
+            const resizer1 = document.getElementById('resizer-1');
+
+            paneTrans.style.width = '';                 
+            paneQuest.style.width = '';
+            
+            const questContentWrap = paneQuest.querySelector('.max-w-full');
+            if(questContentWrap) {
+                questContentWrap.classList.remove('max-w-full', 'w-full');
+                questContentWrap.classList.add('max-w-3xl');
+            }
+            document.getElementById('questions-content').classList.remove('text-lg');
+
+            attachAudioListeners();
+            setTimeout(initResize, 100);
+        }
+
+        function toggleTrans() {
+            document.getElementById('transcript-container').classList.toggle('hidden');
+            document.getElementById('transcript-placeholder').classList.toggle('hidden');
+        }
+
+        function resetState() {
+            document.getElementById('result-message').classList.add('hidden');
+            seconds = 0; if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                seconds++;
+                const m = Math.floor(seconds/60).toString().padStart(2, '0');
+                const s = (seconds%60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function attachAudioListeners() {
+            const audio = document.getElementById('audio');
+            const paras = document.querySelectorAll('#transcript p');
+            activePara = null;
+            
+            // --- LOGIC MỚI: Thu thập thời gian của tất cả các nút Play ---
+            const playBtns = document.querySelectorAll('.play-here-btn');
+            let qTimings = [];
+            playBtns.forEach(btn => {
+                const time = parseFloat(btn.dataset.time);
+                if (!isNaN(time)) qTimings.push({ btn, time });
+            });
+            // Sắp xếp các nút theo thứ tự thời gian từ bé đến lớn
+            qTimings.sort((a, b) => a.time - b.time);
+
+            audio.ontimeupdate = () => {
+                const time = audio.currentTime;
+				// LOGIC DỪNG AUDIO TỰ ĐỘNG
+    if (window.targetStopTime && time >= window.targetStopTime) {
+        audio.pause();
+        window.targetStopTime = null; // Reset sau khi đã dừng
+        return; 
+    }
+                const alerts = document.querySelectorAll('.alert-trigger');
+                let current = null;
+                
+                paras.forEach(p => {
+                    const t = parseFloat(p.dataset.time);
+                    p.classList.remove('active');
+                    if (time >= t) current = p;
+                });
+
+                if (current) {
+                    current.classList.add('active');
+                    if (!document.getElementById('transcript-container').classList.contains('hidden')) {
+                        if (current !== activePara) current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    activePara = current;
+
+                    // Sparkles trigger
+                    current.querySelectorAll('.keyword-sparkle').forEach(sp => {
+                        sp.classList.remove('trigger');
+                        void sp.offsetWidth;
+                        sp.classList.add('trigger');
+                        const targetId = sp.dataset.targetInput;
+                        if (targetId) {
+                            const inputEl = document.getElementById(targetId);
+                            if (inputEl) {
+                                inputEl.classList.add('highlight-input');
+                                setTimeout(() => inputEl.classList.remove('highlight-input'), 2000);
+                            }
+                        }
+                    });
+                }
+                
+                // Alerts trigger
+                alerts.forEach(al => {
+                    let parentP = al.closest('p');
+                    if(!parentP) {
+                        let prev = al.previousElementSibling;
+                        while(prev && prev.tagName !== 'P') prev = prev.previousElementSibling;
+                        if(prev) parentP = prev;
+                    }
+                    if(parentP && parentP.dataset.time) {
+                        const t = parseFloat(parentP.dataset.time);
+                        if (time >= t && time < t + 1) {
+                            const targetId = al.dataset.targetQuestion;
+                            if (targetId) {
+                                const block = document.getElementById(targetId);
+                                if(block) { 
+                                    block.classList.add('highlight-block'); 
+                                    setTimeout(() => block.classList.remove('highlight-block'), 5000); 
+                                    block.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // --- LOGIC MỚI: Dò tìm và thả Dấu Tick Xanh & Chuông Chú Ý ---
+                for (let i = 0; i < qTimings.length; i++) {
+                    const currentQ = qTimings[i];
+                    const nextQ = qTimings[i+1];
+                    
+                    // 1. XỬ LÝ CHUÔNG BÁO CHÚ Ý (Nếu công tắc được bật)
+                    const bellToggle = document.getElementById('bell-toggle');
+                    if (bellToggle && bellToggle.checked) {
+                        // Kích hoạt khi qua mốc time một chút (0 - 1.5s để chặn sai số nếu học sinh tua nhanh)
+                        if (time >= currentQ.time && time < currentQ.time + 1.5) {
+                            if (!currentQ.bellRinging) {
+                                currentQ.bellRinging = true;
+                                const bell = document.createElement('span');
+                                bell.className = 'attention-bell';
+                                bell.innerHTML = '<i class="fa-solid fa-bell mr-1"></i> Chú ý';
+                                currentQ.btn.after(bell); // Thả chuông ngay cạnh nút Play
+                                
+                                // Tự động xóa chuông sau 3 giây
+                                setTimeout(() => {
+                                    if (bell.parentNode) bell.remove();
+                                }, 3000);
+                            }
+                        } else if (time < currentQ.time) {
+                            // Reset trạng thái nếu học sinh tua ngược audio về trước
+                            currentQ.bellRinging = false; 
+                        }
+                    }
+
+                    // 2. XỬ LÝ DẤU TICK HOÀN THÀNH
+                    let isDone = false;
+                    if (nextQ) {
+                        if (time >= nextQ.time) isDone = true;
+                    } else {
+                        if (time >= currentQ.time + 15 || audio.ended) isDone = true;
+                    }
+                    
+                    // Tìm dấu tick xanh an toàn (tránh đụng chạm element chuông)
+                    let tickEl = null;
+                    let sibling = currentQ.btn.nextElementSibling;
+                    while (sibling) {
+                        if (sibling.classList.contains('done-tick')) {
+                            tickEl = sibling; 
+                            break;
+                        }
+                        sibling = sibling.nextElementSibling;
+                    }
+                    
+                    if (isDone) {
+                        if (!tickEl) {
+                            const tick = document.createElement('i');
+                            tick.className = 'fa-solid fa-circle-check done-tick';
+                            tick.title = "Audio đã phát qua phần này";
+                            currentQ.btn.after(tick); 
+                        }
+                    } else {
+                        if (tickEl) tickEl.remove(); // Thu hồi nếu tua ngược
+                    }
+                }
+            };
+			
+			audio.onseeked = () => { window.targetStopTime = null; };
+            
+            paras.forEach(p => { 
+				p.onclick = () => { 
+					if (window.isAnalysisMode) {
+						// Chặn audio và gọi API phân tích câu
+						analyzeSentence(p.innerText);
+					} else {
+						// Trạng thái bình thường: play audio
+						audio.currentTime = parseFloat(p.dataset.time); 
+						audio.play(); 
+					}
+				}; 
+			});
+        }
+
+        function initResize() {
+           const mainContainer = document.getElementById('main-container');
+           if(!mainContainer || window.innerWidth < 768) return; 
+
+           const resizer1 = document.getElementById('resizer-1');
+           const paneTrans = document.getElementById('pane-transcript');
+           if(resizer1 && paneTrans) {
+               const newResizer1 = resizer1.cloneNode(true);
+               resizer1.parentNode.replaceChild(newResizer1, resizer1);
+               newResizer1.addEventListener('mousedown', function(e) {
+                   e.preventDefault(); newResizer1.classList.add('active'); document.body.style.cursor = 'col-resize';
+                   const startX = e.clientX; const startWidth = paneTrans.getBoundingClientRect().width; const containerWidth = mainContainer.getBoundingClientRect().width;
+                   function onMouseMove(e) { const dx = e.clientX - startX; let newWidth = ((startWidth + dx) / containerWidth) * 100; if(newWidth < 20) newWidth = 20; if(newWidth > 60) newWidth = 60; paneTrans.style.width = newWidth + '%'; }
+                   function onMouseUp() { newResizer1.classList.remove('active'); document.body.style.cursor = ''; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
+                   document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+               });
+           }
+        }
+        window.addEventListener('resize', initResize);
+
+        function checkResults() {
+    const lesson = lessonsData[currentLessonIndex];
+    const key = lesson.answerKey;
+    let score = 0; let total = 0;
+    if(Object.keys(key).length === 0) return alert("Chưa cài đặt đáp án.");
+
+    // Khởi tạo biến đếm số lần nộp bài (mặc định là 1)
+    if (!lesson.submitAttempt) lesson.submitAttempt = 1;
+
+    document.querySelectorAll('.correct-feedback').forEach(e => e.remove());
+    document.querySelectorAll('.correct-answer, .incorrect-answer, .correct-text').forEach(e => e.classList.remove('correct-answer', 'incorrect-answer', 'correct-text'));
+
+    for(const [id, val] of Object.entries(key)) {
+        const el = document.getElementById(id);
+        if(el && (el.tagName === 'INPUT' || el.classList.contains('drop-zone'))) {
+            total++;
+            let userVal = el.tagName === 'INPUT' ? el.value.trim().toLowerCase() : (el.dataset.value || "").trim().toLowerCase();
+            const options = val.split(/[,\/]/).map(s => s.trim().toLowerCase());
+            
+            if(options.includes(userVal)) {
+                score++; 
+                el.classList.add('correct-answer');
+            } else {
+                el.classList.add('incorrect-answer');
+                // CHỈ HIỆN ĐÁP ÁN NẾU LÀ LẦN NỘP THỨ 2
+                if (lesson.submitAttempt >= 2) {
+                    const div = document.createElement('div'); 
+                    div.className = 'correct-feedback'; 
+                    div.innerText = `Correct: ${val}`; 
+                    el.after(div);
+                }
+            }
+        } else {
+            const inputs = document.getElementsByName(id);
+            if(inputs.length > 0) {
+                const type = inputs[0].type;
+                if(type === 'radio') {
+                    total++;
+                    let selected = ""; 
+                    for(let i of inputs) if(i.checked) selected = i.value.toUpperCase();
+                    if(selected === val.toUpperCase()) { score++; }
+                    
+                    for(let i of inputs) {
+                        const char = i.value.toUpperCase();
+                        const target = i.closest('td') || i.parentElement;
+                        
+                        if (i.checked && char === val.toUpperCase()) {
+                            // Chọn đúng
+                            target.classList.add('correct-text');
+                        } else if (i.checked && char !== val.toUpperCase()) {
+                            // Chọn sai
+                            target.classList.add('incorrect-answer');
+                        } else if (!i.checked && char === val.toUpperCase()) {
+                            // Bỏ lỡ đáp án đúng -> CHỈ SHOW Ở LẦN 2
+                            if (lesson.submitAttempt >= 2) {
+                                target.classList.add('correct-text');
+                            }
+                        }
+                    }
+                } else if(type === 'checkbox') {
+                    const keyArr = val.toUpperCase().split(/[,\s/&]+/).filter(x=>x);
+                    total += keyArr.length;
+                    let correctCount = 0;
+                    
+                    for(let i of inputs) {
+                        const char = i.parentElement.innerText.trim().charAt(0).toUpperCase();
+                        if(i.checked) {
+                            if(keyArr.includes(char)) {
+                                correctCount++;
+                                i.parentElement.classList.add('correct-text');
+                            } else {
+                                i.parentElement.classList.add('incorrect-answer');
+                            }
+                        } else {
+                            // Bỏ lỡ đáp án đúng -> CHỈ SHOW Ở LẦN 2
+                            if(keyArr.includes(char) && lesson.submitAttempt >= 2) {
+                                i.parentElement.classList.add('correct-text');
+                            }
+                        }
+                    }
+                    score += correctCount;
+                }
+            }
+        }
+    }
+    
+    // Tùy biến Nút Submit & Cảnh báo dựa theo số lần nộp
+    const msg = document.getElementById('result-message');
+    const btn = document.querySelector('button[onclick="checkResults()"]');
+
+    if (lesson.submitAttempt === 1 && score < total) {
+        // Lần 1: Còn câu sai -> Cho làm lại
+        msg.innerText = `Bạn làm đúng ${score}/${total} câu. Hãy kiểm tra lại những câu sai (màu đỏ) và nộp bài lần nữa nhé!`;
+        msg.classList.remove('hidden');
+        
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-rotate-right mr-1"></i> Nộp Lần 2';
+            btn.className = 'bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-1.5 rounded shadow transition';
+        }
+        lesson.submitAttempt = 2; // Tăng mốc để lần bấm sau sẽ chốt sổ
+    } else {
+        // Lần 2 HOẶC Lần 1 đúng 100% -> Chốt sổ
+        msg.innerText = `Kết quả cuối cùng: ${score}/${total} câu đúng`;
+        msg.classList.remove('hidden');
+        
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Đã Nộp';
+            btn.className = 'bg-gray-500 text-white text-sm font-bold px-4 py-1.5 rounded shadow cursor-not-allowed opacity-70';
+            btn.disabled = true; // Khóa nút nộp
+        }
+        
+        // Lưu kết quả và dừng đồng hồ
+        if(window.timerInterval) clearInterval(window.timerInterval);
+        lessonsData[currentLessonIndex].lastResult = score + "/" + total;
+        // Bổ sung dữ liệu chi tiết cho Report
+        lessonsData[currentLessonIndex].scoreInfo = { correct: score, total: total };
+        lessonsData[currentLessonIndex].timeTaken = document.getElementById('timer').innerText;
+		
+		// --- THÊM CODE GỬI BÁO CÁO PART LẺ Ở ĐÂY ---
+        const filterVal = document.querySelector('input[name="lesson_filter"]:checked').value;
+        // Bắt buộc gửi báo cáo ngay nếu đang luyện Part lẻ HOẶC tự chọn 1 bài cụ thể (không phải chuỗi 4 bài)
+        if (filterVal !== 'ALL' || currentTestSequence.length === 0) {
+            let timeParts = document.getElementById('timer').innerText.split(':');
+            let timeSpent = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+            sendReportToSheet(score, total, timeSpent);
+        }
+        // ------------------------------------------
+        
+        // Chỉ lưu thời điểm lần đầu tiên chốt sổ để giữ nguyên lịch sử
+        if(!lessonsData[currentLessonIndex].dateCompleted) {
+            const now = new Date();
+            lessonsData[currentLessonIndex].dateCompleted = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()} ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
+        }
+    }
+	
+	updatePaletteState(); // Cập nhật màu đỏ/xanh lá cây
+    document.getElementById('bottom-actions').classList.remove('hidden');
+    const btnNext = document.getElementById('btn-next-lesson');
+    const filterVal = document.querySelector('input[name="lesson_filter"]:checked').value;
+    if (filterVal === 'ALL') {
+        if (currentTestSequence.length > 0) {
+            btnNext.classList.remove('hidden');
+            let currentIndex = currentTestSequence.indexOf(currentLessonIndex);
+            if (currentIndex < currentTestSequence.length - 1) {
+                btnNext.innerText = `Bài tiếp theo (Phím ➔) ❯❯`;
+            } else {
+                btnNext.innerText = `Nộp & Xem Report ❯❯`;
+            }
+        } else {
+            btnNext.classList.add('hidden');
+        }
+    } else {
+        if (filteredIndexes.length > 1) {
+            btnNext.classList.remove('hidden');
+            btnNext.innerText = `Bài ngẫu nhiên tiếp theo (Phím ➔) ❯❯`;
+        } else btnNext.classList.add('hidden');
+    }
+}
+
+        window.onload = () => {
+            renderDashboard();
+            const selector = document.getElementById('lesson-selector');
+            lessonsData.forEach((l, i) => {
+                const opt = document.createElement('option'); opt.value = i; opt.innerText = l.name;
+                selector.appendChild(opt);
+            });
+        };
+
+        let filteredIndexes = []; // Lưu danh sách các bài đang hiển thị
+
+        function getLessonPart(lesson) {
+            // Tự động quét số câu hỏi đầu tiên để biết bài này thuộc Part mấy
+            const match = lesson.processedQuestions.match(/(?:class="q-badge"|class="[^"]*bg-blue-100[^"]*")[^>]*>(\d+)</);
+            if (match) {
+                const num = parseInt(match[1]);
+                if (num <= 10) return "PART1";
+                if (num <= 20) return "PART2";
+                if (num <= 30) return "PART3";
+                if (num <= 40) return "PART4";
+            }
+            return "ALL"; // Mặc định nếu không phân tách được
+        }
+
+        function renderDashboard() {
+            // Đánh dấu Part cho từng bài nếu chưa có
+            lessonsData.forEach(l => {
+                if(!l.part) l.part = getLessonPart(l);
+            });
+
+            // Lắng nghe sự kiện click chọn Part
+            document.querySelectorAll('input[name="lesson_filter"]').forEach(radio => {
+                radio.addEventListener('change', updateFilteredCards);
+            });
+
+            updateFilteredCards();
+            document.body.classList.add('in-dashboard');
+        }
+
+        function updateFilteredCards() {
+            const filterVal = document.querySelector('input[name="lesson_filter"]:checked').value;
+            const cardArea = document.getElementById('card-render-area');
+            const selectBox = document.getElementById('specific-lesson-select');
+            
+            let cardsHtml = '';
+            let optionsHtml = '<option value="">🗂️ Chọn bài nghe cụ thể...</option>';
+            filteredIndexes = [];
+
+            lessonsData.forEach((d, i) => {
+                // Hiển thị nếu chọn 'Full Test' hoặc đúng Part đang chọn
+                if (filterVal === 'ALL' || d.part === filterVal) {
+                    filteredIndexes.push(i);
+                    let totalQs = d.totalQs || 0;
+                    
+                    let tagsHtml = `<div class="q-tag">Listening Task <span class="q-tag-count">${totalQs}</span></div>`;
+                    if (d.lastResult) {
+                        tagsHtml += `<div class="q-tag" style="background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">Kết quả: <span class="q-tag-count" style="background:#16a34a; color:white;">${d.lastResult}</span></div>`;
+                    }
+
+                    
+
+                    optionsHtml += `<option value="${i}">${d.name || 'Untitled'}</option>`;
+                }
+            });
+            
+            cardArea.innerHTML = cardsHtml;
+            selectBox.innerHTML = optionsHtml;
+            
+            // Ẩn/hiện khu vực Card (nếu muốn bảng điều khiển gọn gàng)
+            cardArea.style.display = 'none'; // Luôn ẩn danh sách card theo yêu cầu
+			// Đổi text và sự kiện của nút bắt đầu tùy theo chế độ
+            const mainBtn = document.querySelector('.random-btn');
+            if (mainBtn) {
+                if (filterVal === 'ALL') {
+                    mainBtn.innerHTML = '<i class="fa-solid fa-play"></i> LÀM NGUYÊN BÀI (TUẦN TỰ)';
+                    mainBtn.onclick = startSequentialTest;
+                } else {
+                    mainBtn.innerHTML = '<i class="fa-solid fa-shuffle"></i> NGẪU NHIÊN 1 BÀI';
+                    mainBtn.onclick = startRandomTest;
+                }
+            }
+        }
+
+        window.startRandomTest = () => {
+		window.isSpecificLessonMode = false; // Thêm dòng này
+            if (filteredIndexes.length === 0) {
+                alert("Hiện tại trong dữ liệu chưa có bài nào thuộc Part này nhé!");
+                return;
+            }
+            if (filteredIndexes.length === 1) {
+                startTest(filteredIndexes[0]);
+                return;
+            }
+            
+            let randomIndex;
+            // Bốc ngẫu nhiên nhưng đảm bảo không trùng với bài hiện tại đang mở
+            do {
+                randomIndex = filteredIndexes[Math.floor(Math.random() * filteredIndexes.length)];
+            } while (randomIndex === currentLessonIndex && !document.body.classList.contains('in-dashboard'));
+            
+            startTest(randomIndex);
+        };
+
+        // Lắng nghe sự kiện nhấn phím mũi tên phải (ArrowRight)
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight') {
+                // Bỏ qua nếu học sinh đang gõ chữ vào ô điền từ (tránh nhảy bài nhầm)
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                
+                // Chỉ kích hoạt nhảy bài khi đang ở trong màn hình làm bài và có nhiều hơn 1 bài để nhảy
+                if (!document.body.classList.contains('in-dashboard') && filteredIndexes.length > 1) {
+                    goToNextLesson();
+                }
+            }
+        });
+
+        window.startTest = (idx) => {
+            // 1. Loại bỏ class ẩn giao diện chính
+            document.body.classList.remove('in-dashboard');
+            // 2. Ẩn hẳn Dashboard view để không che bài tập
+            document.getElementById('dashboard-view').style.display = 'none';
+            // 3. Chuyển bài và render
+            document.getElementById('lesson-selector').value = idx;
+            switchLesson(idx);
+        };
+
+        window.goBackToDashboard = () => {
+            if(confirm("Bạn có muốn quay lại danh sách bài tập? (Tiến độ và kết quả sẽ được lưu tạm)")) {
+                saveCurrentStateToMemory(); // Chụp ảnh trạng thái trước khi thoát
+                
+                // 1. Hiện lại Dashboard view
+                document.getElementById('dashboard-view').style.display = 'flex';
+                // 2. Thêm class để ẩn giao diện làm bài
+                document.body.classList.add('in-dashboard');
+                
+                // Dừng các hoạt động của bài thi
+                if(window.timerInterval) clearInterval(window.timerInterval);
+                const audio = document.getElementById('audio');
+                if(audio) audio.pause();
+                
+                // Vẽ lại Dashboard để hiển thị điểm vừa lưu
+                renderDashboard();
+            }
+        };
+		
+		// --- LOGIC QUESTION PALETTE & BOTTOM ACTIONS ---
+function buildPalette(lesson) {
+    const pal = document.getElementById('question-palette');
+    pal.innerHTML = '';
+    const key = lesson.answerKey;
+    if (!key || Object.keys(key).length === 0) return;
+    
+    let fallbackCounter = 1;
+    
+    for (const id in key) {
+        let qLabel = "";
+        const el = document.getElementById(id);
+        
+        if (el) {
+            // Dạng 1: Trắc nghiệm (Radio/Checkbox)
+            if (el.classList.contains('question-block')) {
+                const badge = el.querySelector('.q-badge, .bg-blue-100');
+                if (badge) qLabel = badge.innerText.trim();
+            } 
+            // Dạng 2: Điền từ (Gap-fill) hoặc Kéo thả (Drop-zone)
+            else if (el.tagName === 'INPUT' || el.classList.contains('drop-zone')) {
+                const prev = el.previousElementSibling;
+                if (prev && prev.tagName === 'SPAN') {
+                    qLabel = prev.innerText.trim();
+                } else {
+                    // Nếu nằm trong bảng, thử tìm nhãn xung quanh ô đó
+                    const parent = el.parentElement;
+                    if (parent) {
+                        const badge = parent.querySelector('.q-badge, .bg-blue-100');
+                        if (badge) qLabel = badge.innerText.trim();
+                    }
+                }
+            }
+        } else {
+            // Dạng 3: Map Grid (Không có thẻ ID trực tiếp, phải quét qua Name của thẻ Radio)
+            const inputs = document.getElementsByName(id);
+            if (inputs.length > 0) {
+                const tr = inputs[0].closest('tr');
+                if (tr) {
+                    const firstTd = tr.querySelector('td');
+                    if (firstTd) {
+                        const match = firstTd.innerText.match(/^\d+/);
+                        if (match) qLabel = match[0];
+                    }
+                }
+            }
+        }
+
+        // Nếu câu nào đề bài không ghi số, dùng biến đếm dự phòng nối tiếp
+        if (!qLabel || qLabel === '#') {
+            qLabel = fallbackCounter;
+        } else {
+            // Cập nhật lại bộ đếm cho khớp với số hiện tại
+            const parsedNum = parseInt(qLabel);
+            if (!isNaN(parsedNum)) fallbackCounter = parsedNum;
+        }
+        fallbackCounter++;
+
+        // Render nút bấm
+        const btn = document.createElement('button');
+        btn.className = 'palette-btn';
+        btn.innerText = qLabel;
+        btn.dataset.targetId = id;
+        btn.onclick = () => scrollToQuestion(id);
+        pal.appendChild(btn);
+    }
+    updatePaletteState();
+}
+
+		function updatePaletteState() {
+            document.querySelectorAll('.palette-btn').forEach(btn => {
+                const id = btn.dataset.targetId;
+                let answered = false; let isCorrect = false; let isIncorrect = false;
+                
+                const el = document.getElementById(id);
+                if(el) {
+                    if(el.tagName === 'INPUT') {
+                        answered = el.value.trim() !== '';
+                    } 
+                    else if(el.classList.contains('drop-zone')) {
+                        answered = (el.dataset.value || '').trim() !== '';
+                    } 
+                    else if (el.classList.contains('question-block')) {
+                        // Nhận diện xuyên thấu vào các câu Multiple Choice (Radio/Checkbox)
+                        const inputs = el.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+                        if (inputs.length > 0) {
+                            for(let i of inputs) {
+                                if(i.checked) answered = true;
+                                const target = i.parentElement;
+                                if(target.classList.contains('correct-text') || target.classList.contains('correct-answer')) isCorrect = true;
+                                if(target.classList.contains('incorrect-answer')) isIncorrect = true;
+                            }
+                        }
+                    }
+                    
+                    // Quét đúng sai cho dạng text/drop-zone
+                    if(el.classList.contains('correct-answer')) isCorrect = true;
+                    if(el.classList.contains('incorrect-answer')) isIncorrect = true;
+                } else {
+                    // Nhận diện cho Map Grid
+                    const inputs = document.getElementsByName(id);
+                    if(inputs.length) {
+                        for(let i of inputs) {
+                            if(i.checked) answered = true;
+                            const target = i.closest('td') || i.parentElement;
+                            if(target.classList.contains('correct-text') || target.classList.contains('correct-answer')) isCorrect = true;
+                            if(target.classList.contains('incorrect-answer')) isIncorrect = true;
+                        }
+                    }
+                }
+                
+                btn.className = 'palette-btn'; // Reset
+                if (isIncorrect) btn.classList.add('incorrect');
+                else if (isCorrect) btn.classList.add('correct');
+                else if (answered) btn.classList.add('answered');
+            });
+        }
+
+function scrollToQuestion(id) {
+    let el = document.getElementById(id);
+    if(!el) {
+        const inputs = document.getElementsByName(id);
+        if(inputs.length) el = inputs[0].closest('.question-block') || inputs[0].closest('tr');
+    }
+    if(el) {
+        el.scrollIntoView({behavior: 'smooth', block: 'center'});
+        el.classList.remove('blink-effect');
+        void el.offsetWidth; // Trigger reflow
+        el.classList.add('blink-effect');
+    }
+}
+
+// Lắng nghe sự kiện gõ phím/chọn đáp án để tô màu xanh da trời
+document.addEventListener('input', (e) => { if(e.target.closest('#questions-content')) updatePaletteState(); });
+document.addEventListener('change', (e) => { if(e.target.closest('#questions-content')) updatePaletteState(); });
+
+		let currentTestSequence = []; 
+        let usedLessons = []; // Biến mới: Ghi nhớ các bài đã từng làm trong phiên này
+		window.isSpecificLessonMode = false; // Thêm dòng này
+
+        window.startSequentialTest = () => {
+		window.isSpecificLessonMode = false; // Thêm dòng này
+            // Lọc ra danh sách các bài CHƯA từng được bốc
+            let availableLessons = lessonsData.map((l, i) => !usedLessons.includes(i) ? i : -1).filter(i => i !== -1);
+
+            // Phân nhóm các bài còn trống theo Part
+            const p1 = availableLessons.filter(i => lessonsData[i].part === 'PART1');
+            const p2 = availableLessons.filter(i => lessonsData[i].part === 'PART2');
+            const p3 = availableLessons.filter(i => lessonsData[i].part === 'PART3');
+            const p4 = availableLessons.filter(i => lessonsData[i].part === 'PART4');
+
+            // Nếu 1 trong 4 Part đã bị xài hết bài, tiến hành reset bộ nhớ
+            if (!p1.length || !p2.length || !p3.length || !p4.length) {
+                alert("Hoan hô! Bạn đã giải hết các tổ hợp đề không trùng lặp. Hệ thống sẽ trộn lại từ đầu nhé!");
+                usedLessons = []; // Xóa trí nhớ
+                return startSequentialTest(); // Tự động bốc lại vòng mới
+            }
+
+            // Thuật toán: Bốc ngẫu nhiên đúng 1 bài từ các bài CHƯA LÀM
+            currentTestSequence = [
+                p1[Math.floor(Math.random() * p1.length)],
+                p2[Math.floor(Math.random() * p2.length)],
+                p3[Math.floor(Math.random() * p3.length)],
+                p4[Math.floor(Math.random() * p4.length)]
+            ];
+
+            // Lưu 4 bài vừa bốc vào sổ tay "Đã làm"
+            usedLessons.push(...currentTestSequence);
+
+            // Làm sạch mọi lịch sử làm bài trước đó trong cả ngân hàng đề
+            lessonsData.forEach(l => {
+                delete l.lastResult; delete l.scoreInfo; delete l.timeTaken; 
+                delete l.dateCompleted; delete l.submitAttempt; delete l.savedDOM;
+            });
+
+            // Ra lệnh bắt đầu bài thi
+            startTest(currentTestSequence[0]);
+        };
+
+        window.goToNextLesson = () => {
+            const filterVal = document.querySelector('input[name="lesson_filter"]:checked').value;
+            if (filterVal === 'ALL') {
+                // Di chuyển sang Part tiếp theo trong bộ 4 bài đã bốc
+                let currentIndex = currentTestSequence.indexOf(currentLessonIndex);
+                if (currentIndex >= 0 && currentIndex < currentTestSequence.length - 1) {
+                    startTest(currentTestSequence[currentIndex + 1]);
+                } else {
+				
+				// --- THÊM CODE GỬI BÁO CÁO FULL TEST ---
+                    let totalCorrect = 0, totalQs = 0, totalTime = 0;
+                    currentTestSequence.forEach(idx => {
+                        const l = lessonsData[idx];
+                        if (l.scoreInfo) {
+                            totalCorrect += l.scoreInfo.correct;
+                            totalQs += l.scoreInfo.total;
+                            let t = (l.timeTaken || "00:00").split(':');
+                            totalTime += parseInt(t[0]) * 60 + parseInt(t[1]);
+                        }
+                    });
+                    sendReportToSheet(totalCorrect, totalQs, totalTime, "Full Test (4 Parts)");
+                    // ---------------------------------------
+					
+                    openReport(); // Hoàn thành 4 Parts thì tự động bung Report
+                }
+            } else {
+                startRandomTest(); // Chế độ luyện tập ngẫu nhiên
+            }
+        };
+
+window.navigateSpecific = (dir) => {
+    const newIdx = currentLessonIndex + dir;
+    if (newIdx >= 0 && newIdx < lessonsData.length) {
+        saveCurrentStateToMemory(); // Lưu tạm tiến độ bài đang làm trước khi chuyển
+        startTest(newIdx);
+    }
+};
+
+
+window.saveCurrentResult = () => {
+    saveCurrentStateToMemory();
+    const clone = document.documentElement.cloneNode(true);
+    
+    // Dọn dẹp giao diện trước khi xuất file tĩnh
+    ['#dashboard-view', '.back-btn', '#bottom-actions'].forEach(sel => {
+        const el = clone.querySelector(sel);
+        if(el) el.remove();
+    });
+    clone.querySelectorAll('script').forEach(s => s.remove());
+    clone.querySelector('button[onclick="checkResults()"]').remove();
+    
+    const html = "<!DOCTYPE html>\n" + clone.outerHTML;
+    const blob = new Blob([html], {type: "text/html;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `Result_${lessonsData[currentLessonIndex].name}.html`;
+    a.click();
+};
+
+// --- LOGIC BÁO CÁO (REPORT) ---
+        let isFromReport = false;
+
+        function detectTypes(lesson) {
+            let types = new Set();
+            if (lesson.processedQuestions.includes('type="radio"') || lesson.processedQuestions.includes('type="checkbox"')) types.add('Multiple Choice');
+            if (lesson.processedQuestions.includes('type="text"')) types.add('Gap Fill');
+            if (lesson.processedQuestions.includes('drop-zone')) types.add('Matching/Map');
+            return Array.from(types).join(', ') || 'Mixed';
+        }
+
+        function getBandScore(correct, total) {
+            if(total === 0) return "0.0";
+            let scaled = Math.round((correct / total) * 40); // Đưa về hệ số 40 câu IELTS chuẩn
+            if (scaled >= 39) return "9.0"; if (scaled >= 37) return "8.5";
+            if (scaled >= 35) return "8.0"; if (scaled >= 32) return "7.5";
+            if (scaled >= 30) return "7.0"; if (scaled >= 26) return "6.5";
+            if (scaled >= 23) return "6.0"; if (scaled >= 18) return "5.5";
+            if (scaled >= 16) return "5.0"; if (scaled >= 13) return "4.5";
+            if (scaled >= 10) return "4.0"; if (scaled >= 8) return "3.5";
+            if (scaled >= 6) return "3.0"; if (scaled >= 4) return "2.5";
+            return "0.0"; 
+        }
+
+        function openReport() {
+            document.body.classList.add('in-dashboard');
+            document.getElementById('dashboard-view').style.display = 'none';
+            document.getElementById('report-view').style.display = 'flex';
+            renderReportData();
+        }
+
+        function closeReport() {
+            document.getElementById('report-view').style.display = 'none';
+            document.getElementById('dashboard-view').style.display = 'flex';
+        }
+
+        function viewFromReport(idx) {
+            isFromReport = true;
+            document.getElementById('report-view').style.display = 'none';
+            
+            // Xử lý nút Back
+            document.getElementById('btn-back-report').classList.remove('hidden');
+            document.querySelector('.back-btn:not(#btn-back-report)').classList.add('hidden');
+            
+            startTest(idx);
+        }
+
+        function backToReport() {
+            isFromReport = false;
+            saveCurrentStateToMemory(); // Lưu tạm nếu học sinh đang xem dở
+            
+            // Đổi lại nút Back
+            document.getElementById('btn-back-report').classList.add('hidden');
+            document.querySelector('.back-btn:not(#btn-back-report)').classList.remove('hidden');
+            
+            // Dừng Audio
+            if(window.timerInterval) clearInterval(window.timerInterval);
+            const audio = document.getElementById('audio');
+            if(audio) audio.pause();
+            
+            openReport();
+        }
+
+        function renderReportData() {
+            let partAcc = { 'PART1': {c:0, t:0}, 'PART2': {c:0, t:0}, 'PART3': {c:0, t:0}, 'PART4': {c:0, t:0}, 'ALL': {c:0, t:0} };
+            let totalCorrect = 0, totalQs = 0, completedCount = 0;
+            let historyRows = '';
+
+            const filterVal = document.querySelector('input[name="lesson_filter"]:checked').value;
+            
+            // LOGIC QUAN TRỌNG: Tách riêng danh sách bài sẽ được đưa vào tính điểm Report
+            let reportList = [];
+            if (filterVal === 'ALL' && currentTestSequence && currentTestSequence.length === 4) {
+                // Nếu đang làm Full Test, CHỈ bốc đúng 4 Parts đã được random để tính điểm
+                reportList = currentTestSequence.map(idx => ({ l: lessonsData[idx], idx: idx }));
+            } else {
+                // Nếu đang luyện tập Part lẻ tẻ ngẫu nhiên, quét tất cả bài đã có kết quả
+                reportList = lessonsData.map((l, idx) => ({ l: l, idx: idx }));
+            }
+
+            reportList.forEach(item => {
+                const l = item.l;
+                const idx = item.idx;
+
+                if(l.lastResult && l.scoreInfo) {
+                    completedCount++;
+                    totalCorrect += l.scoreInfo.correct;
+                    totalQs += l.scoreInfo.total;
+                    
+                    let p = l.part || 'ALL';
+                    if(partAcc[p]) {
+                        partAcc[p].c += l.scoreInfo.correct;
+                        partAcc[p].t += l.scoreInfo.total;
+                    }
+                    
+                    let types = detectTypes(l);
+                    let timeStr = l.timeTaken || '00:00';
+                    let dateStr = l.dateCompleted || '-';
+                    
+                    let percent = Math.round((l.scoreInfo.correct/l.scoreInfo.total)*100);
+                    
+                    historyRows += `<tr>
+                        <td class="font-medium">${l.name.substring(0,25)}${l.name.length>25?'...':''}</td>
+                        <td>${types}</td>
+                        <td>${l.scoreInfo.correct}/${l.scoreInfo.total} <span class="text-gray-400">(${percent}%)</span></td>
+                        <td>${timeStr}</td>
+                        <td>${dateStr}</td>
+                        <td class="text-right"><a class="btn-detail" onclick="viewFromReport(${idx})">Xem chi tiết →</a></td>
+                    </tr>`;
+                }
+            });
+
+            // Gắn số liệu tổng quan lên giao diện Report
+            document.getElementById('rp-total-lessons').innerText = completedCount;
+            document.getElementById('rp-correct').innerText = `${totalCorrect} / ${totalQs}`;
+            
+            // Xử lý Band điểm: Chỉ tính và hiện Band điểm IELTS khi học sinh làm Full Test
+            if (filterVal === 'ALL') {
+                document.getElementById('rp-band').innerText = getBandScore(totalCorrect, totalQs);
+                document.getElementById('rp-band').classList.remove('text-gray-400');
+                document.getElementById('rp-band').classList.add('text-orange-600');
+            } else {
+                document.getElementById('rp-band').innerText = "---";
+                document.getElementById('rp-band').classList.remove('text-orange-600');
+                document.getElementById('rp-band').classList.add('text-gray-400');
+            }
+
+            document.getElementById('rp-history-count').innerText = completedCount;
+            document.getElementById('rp-history-body').innerHTML = historyRows || '<tr><td colspan="6" class="text-center py-4">Chưa có dữ liệu làm bài.</td></tr>';
+
+            // Vẽ Progress Bars thể hiện độ chính xác theo Parts
+            let barsHTML = '';
+            for(let key in partAcc) {
+                if(partAcc[key].t > 0) {
+                    let acc = Math.round((partAcc[key].c / partAcc[key].t) * 100);
+                    let partName = key === 'ALL' ? 'Full Test / Mixed' : key.replace('PART', 'Part ');
+                    barsHTML += `
+                        <div class="progress-row">
+                            <div class="progress-label">${partName}</div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${acc}%"></div>
+                            </div>
+                        </div>`;
+                }
+            }
+            document.getElementById('rp-accuracy-bars').innerHTML = barsHTML || '<div class="text-sm text-gray-500 italic">Chưa đủ dữ liệu để thống kê theo part.</div>';
+        }
+		
+
+
+window.speakVocab = function(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    // Tự động detect ngôn ngữ cho engine Anh/Trung
+    if (/[a-zA-Z]/.test(text)) {
+        utterance.lang = 'en-US';
+    } else {
+        utterance.lang = 'zh-CN';
+    }
+    window.speechSynthesis.speak(utterance);
+};
+
+window.closeAnalysisModal = function() {
+    document.getElementById('analysis-modal').classList.add('hidden');
+};
+
+window.openPreVocab = () => document.getElementById('prevocab-modal').classList.remove('hidden');
+window.closePreVocab = () => document.getElementById('prevocab-modal').classList.add('hidden');
+
+// --- LOGIC FOCUS MODE, NGHE TỪNG CÂU & ĐỒNG BỘ TRANSCRIPT ---
+window.targetStopTime = null;
+window.focusNodes = [];
+window.currentFocusIndex = -1;
+window.activeFocusBlockInfo = null;
+window.focusStartTime = 0;
+window.focusEndTime = 0;
+window.activeFocusTransP = null;
+
+window.formatFocusTime = function(seconds) {
+    if (isNaN(seconds) || seconds < 0) return "00:00";
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+};
+
+window.renderFocusTranscript = function() {
+    const transArea = document.getElementById('focus-transcript-area');
+    window.activeFocusTransP = null;
+    let html = '';
+    
+    const mainParas = document.querySelectorAll('#transcript p');
+    mainParas.forEach(p => {
+        const t = parseFloat(p.dataset.time);
+        if (t >= window.focusStartTime - 2 && t <= window.focusEndTime + 1) {
+            html += `<p data-time="${t}" onclick="focusSeekTo(${t})">${p.innerHTML}</p>`;
+        }
+    });
+    
+    if (!html) html = '<div class="text-center text-slate-400 italic mt-10">Không có dữ liệu Transcript cho phần này.</div>';
+    transArea.innerHTML = html;
+};
+
+window.toggleFocusTranscript = function() {
+    const transArea = document.getElementById('focus-transcript-area');
+    const modalContainer = document.getElementById('focus-modal-container');
+    const btnText = document.getElementById('focus-trans-text');
+    
+    if (transArea.classList.contains('hidden')) {
+        transArea.classList.remove('hidden');
+        modalContainer.classList.replace('max-w-4xl', 'max-w-6xl'); 
+        btnText.innerText = "Ẩn Trans";
+        window.renderFocusTranscript(); 
+    } else {
+        transArea.classList.add('hidden');
+        modalContainer.classList.replace('max-w-6xl', 'max-w-4xl'); 
+        btnText.innerText = "Hiện Trans";
+    }
+};
+
+window.updateFocusSliderBounds = function() {
+    const audio = document.getElementById('audio');
+    if (!window.focusNodes[window.currentFocusIndex]) return;
+    
+    window.focusStartTime = parseFloat(window.focusNodes[window.currentFocusIndex].dataset.time);
+    
+    if (window.currentFocusIndex < window.focusNodes.length - 1) {
+        window.focusEndTime = parseFloat(window.focusNodes[window.currentFocusIndex + 1].dataset.time);
+    } else {
+        window.focusEndTime = (audio && audio.duration) ? audio.duration : window.focusStartTime + 60;
+    }
+    
+    const duration = window.focusEndTime - window.focusStartTime;
+    const slider = document.getElementById('focus-progress-bar');
+    
+    if (slider) {
+        slider.max = duration; 
+        slider.value = 0;
+    }
+    document.getElementById('focus-time-current').innerText = "00:00";
+    document.getElementById('focus-time-total').innerText = window.formatFocusTime(duration);
+    
+    if (!document.getElementById('focus-transcript-area').classList.contains('hidden')) {
+        window.renderFocusTranscript();
+    }
+};
+
+window.focusSeek = function(val) {
+    const audio = document.getElementById('audio');
+    if (audio) {
+        let newTime = window.focusStartTime + parseFloat(val);
+        if (newTime >= window.focusEndTime) newTime = window.focusEndTime - 0.1;
+        audio.currentTime = newTime;
+        document.getElementById('focus-time-current').innerText = window.formatFocusTime(parseFloat(val));
+    }
+};
+
+window.focusSeekTo = function(time) {
+    const audio = document.getElementById('audio');
+    if (audio) {
+        let newTime = time;
+        if (newTime < window.focusStartTime) newTime = window.focusStartTime;
+        if (newTime >= window.focusEndTime) newTime = window.focusEndTime - 0.1;
+        
+        audio.currentTime = newTime;
+        audio.play();
+    }
+};
+
+window.focusPlay = function() { const audio = document.getElementById('audio'); if (audio) audio.play(); };
+window.focusPause = function() { const audio = document.getElementById('audio'); if (audio) audio.pause(); };
+window.focusReset = function() {
+    const audio = document.getElementById('audio');
+    if (audio) {
+        audio.currentTime = window.focusStartTime;
+        audio.pause();
+        const slider = document.getElementById('focus-progress-bar');
+        if(slider) slider.value = 0;
+        document.getElementById('focus-time-current').innerText = "00:00";
+    }
+};
+
+window.playAudioFrom = function(time) {
+    const audio = document.getElementById('audio');
+    if (!audio) return;
+    const isFocusActive = document.getElementById('focus-mode-toggle')?.checked;
+    const playBtns = Array.from(document.querySelectorAll('.play-here-btn'));
+    
+    playBtns.sort((a, b) => parseFloat(a.dataset.time) - parseFloat(b.dataset.time));
+    const currentIndex = playBtns.findIndex(btn => parseFloat(btn.dataset.time) === time);
+    
+    if (currentIndex !== -1 && currentIndex < playBtns.length - 1) {
+        window.targetStopTime = parseFloat(playBtns[currentIndex + 1].dataset.time);
+    } else {
+        window.targetStopTime = null; 
+    }
+    audio.currentTime = time;
+
+    if (isFocusActive && currentIndex !== -1) {
+        window.focusNodes = playBtns;
+        window.currentFocusIndex = currentIndex;
+        renderFocusQuestion();
+        window.updateFocusSliderBounds(); 
+        document.getElementById('focus-modal').classList.remove('hidden');
+        audio.pause(); 
+        return; 
+    }
+    audio.play();
+};
+
+function restoreFocusBlock() {
+    if (window.activeFocusBlockInfo) {
+        const { block, parent, nextSibling } = window.activeFocusBlockInfo;
+        block.classList.remove('focus-zoomed');
+        if (nextSibling) parent.insertBefore(block, nextSibling);
+        else parent.appendChild(block);
+        window.activeFocusBlockInfo = null;
+    }
+}
+
+// Hàm phụ để xử lý Drag & Drop bên trong Focus Mode
+window.focusDrag = function(ev) {
+    const val = ev.target.dataset.val || ev.target.innerText.split('.')[0].trim();
+    ev.dataTransfer.setData("text", val);
+    ev.dataTransfer.setData("sourceId", ev.target.dataset.originalId);
+};
+
+// Đồng bộ hiệu ứng mờ (used) của Option gốc với Option clone trong Pop-up
+window.syncFocusPoolState = function() {
+    const clones = document.querySelectorAll('#focus-options-pool .draggable-item');
+    clones.forEach(clone => {
+        const orig = document.getElementById(clone.dataset.originalId);
+        if (orig) {
+            if (orig.classList.contains('used')) {
+                clone.classList.add('used');
+            } else {
+                clone.classList.remove('used');
+            }
+            clone.style.display = orig.style.display === 'none' ? 'none' : '';
+        }
+    });
+};
+
+function renderFocusQuestion() {
+    restoreFocusBlock(); 
+    const btn = window.focusNodes[window.currentFocusIndex];
+    if (!btn) return;
+    const block = btn.closest('.question-block') || btn.closest('tr')?.closest('table')?.parentNode || btn.parentElement;
+    
+    if (block) {
+        window.activeFocusBlockInfo = { block, parent: block.parentNode, nextSibling: block.nextSibling };
+        const focusArea = document.getElementById('focus-content-area');
+        focusArea.innerHTML = ''; 
+        focusArea.appendChild(block);
+
+        // --- TÍNH NĂNG MỚI: TỰ ĐỘNG BƠM OPTIONS CHO DẠNG KÉO THẢ ---
+        const dropZones = block.querySelectorAll('.drop-zone');
+        if (dropZones.length > 0 && typeof lessonsData !== 'undefined') {
+            const lesson = lessonsData[currentLessonIndex];
+            const poolContainer = document.createElement('div');
+            poolContainer.id = 'focus-options-pool';
+            poolContainer.className = 'bg-blue-50/70 p-4 mt-6 rounded-xl border border-blue-200 flex flex-wrap gap-3 shadow-inner';
+            poolContainer.innerHTML = '<div class="w-full text-sm font-bold text-blue-800 mb-2"><i class="fa-solid fa-hand-pointer mr-2"></i> Kéo thả các lựa chọn sau vào ô trống:</div>';
+
+            let correctAnswers = [];
+            dropZones.forEach(dz => {
+                let ans = dz.dataset.answer || lesson.answerKey[dz.id];
+                if (ans) correctAnswers.push(ans.trim().toLowerCase());
+            });
+
+            // Lấy tất cả options hiện có trên trang gốc
+            const allDraggables = Array.from(document.querySelectorAll('#pane-questions .draggable-item'));
+            let correctItems = [];
+            let distractorItems = [];
+
+            allDraggables.forEach(item => {
+                if (item.id.startsWith('focus-clone-')) return;
+
+                const val = (item.dataset.val || item.innerText.split('.')[0]).trim().toLowerCase();
+                
+                // 1. Phân loại: Đáp án đúng
+                if (correctAnswers.includes(val)) {
+                    correctItems.push(item);
+                } 
+                // 2. Phân loại: Mồi nhử
+                else {
+                    const isVocab = item.id.includes('drag-vocab');
+                    const isUsed = item.classList.contains('used') || item.style.display === 'none';
+
+                    // Áp dụng Rule: Bỏ qua mồi nhử nếu nó ĐÃ BỊ DÙNG ở câu khác và ô "removeDragged" đang bật
+                    if ((lesson.removeDragged || isVocab) && isUsed) {
+                        // Bỏ qua
+                    } else {
+                        distractorItems.push(item);
+                    }
+                }
+            });
+
+            // Lấy đúng 3 mồi nhử ngẫu nhiên
+            distractorItems.sort(() => 0.5 - Math.random());
+            const selectedDistractors = distractorItems.slice(0, 3);
+
+            // Gộp đáp án đúng + mồi nhử và xáo trộn lại
+            let finalPool = [...correctItems, ...selectedDistractors];
+            finalPool.sort(() => 0.5 - Math.random());
+
+            // Nhân bản (Clone) thả vào Pop-up để không làm hỏng file gốc
+            finalPool.forEach(item => {
+                const clone = item.cloneNode(true);
+                clone.id = 'focus-clone-' + item.id;
+                clone.dataset.originalId = item.id;
+                clone.setAttribute('ondragstart', 'focusDrag(event)');
+                poolContainer.appendChild(clone);
+            });
+
+            focusArea.appendChild(poolContainer);
+            window.syncFocusPoolState(); // Đồng bộ trạng thái mờ ngay lập tức
+        }
+
+        block.classList.add('focus-zoomed');
+        document.getElementById('focus-status').innerText = `Câu ${window.currentFocusIndex + 1} / ${window.focusNodes.length}`;
+    }
+
+    const btnPrev = document.getElementById('focus-btn-prev');
+    const btnNext = document.getElementById('focus-btn-next');
+    btnPrev.disabled = window.currentFocusIndex === 0;
+    btnPrev.style.opacity = window.currentFocusIndex === 0 ? '0.4' : '1';
+    btnNext.disabled = window.currentFocusIndex === window.focusNodes.length - 1;
+    btnNext.style.opacity = window.currentFocusIndex === window.focusNodes.length - 1 ? '0.4' : '1';
+}
+
+window.focusNavigate = function(dir) {
+    const newIndex = window.currentFocusIndex + dir;
+    if (newIndex >= 0 && newIndex < window.focusNodes.length) {
+        window.currentFocusIndex = newIndex;
+        const nextBtn = window.focusNodes[window.currentFocusIndex];
+        const time = parseFloat(nextBtn.dataset.time);
+        
+        if (newIndex < window.focusNodes.length - 1) {
+            window.targetStopTime = parseFloat(window.focusNodes[newIndex + 1].dataset.time);
+        } else {
+            window.targetStopTime = null;
+        }
+
+        renderFocusQuestion(); 
+        window.updateFocusSliderBounds(); 
+        
+        const audio = document.getElementById('audio');
+        if (audio) {
+            audio.currentTime = time;
+            audio.pause();
+        }
+    }
+};
+
+window.closeFocusMode = function() {
+    document.getElementById('focus-modal').classList.add('hidden');
+    restoreFocusBlock(); 
+    const audio = document.getElementById('audio');
+    if (audio) audio.pause();
+    window.targetStopTime = null;
+};
+
+// Liên tục đồng bộ Slider, Khóa Audio và Highlight Transcript khi file phát (BẢN TỐI ƯU HIỆU NĂNG)
+document.addEventListener('DOMContentLoaded', () => {
+    const audio = document.getElementById('audio');
+    if(audio) {
+        audio.addEventListener('timeupdate', () => {
+            const modal = document.getElementById('focus-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                const time = audio.currentTime;
+                
+                // Khóa cứng: Ngừng phát nếu quá giới hạn
+                if (window.focusEndTime && time >= window.focusEndTime) {
+                    audio.pause();
+                    audio.currentTime = window.focusEndTime - 0.05; 
+                }
+                
+                // Đồng bộ thanh kéo (Slider)
+                const slider = document.getElementById('focus-progress-bar');
+                if (slider) {
+                    let relativeTime = time - window.focusStartTime;
+                    if (relativeTime < 0) relativeTime = 0;
+                    slider.value = relativeTime;
+                    // Tối ưu: Chỉ cập nhật text hiển thị thời gian nếu số giây nguyên thay đổi để tránh chớp giật chữ
+                    const timeText = window.formatFocusTime(relativeTime);
+                    const currentDisplay = document.getElementById('focus-time-current');
+                    if (currentDisplay.innerText !== timeText) {
+                        currentDisplay.innerText = timeText;
+                    }
+                }
+
+                // ĐỒNG BỘ MÀU TRANSCRIPT - TỐI ƯU SIÊU MƯỢT
+                const transArea = document.getElementById('focus-transcript-area');
+                if (!transArea.classList.contains('hidden')) {
+                    const transParas = transArea.querySelectorAll('p');
+                    let newActiveP = null;
+                    
+                    // Tìm dòng text khớp với thời gian
+                    for (let i = 0; i < transParas.length; i++) {
+                        const t = parseFloat(transParas[i].dataset.time);
+                        if (time >= t) {
+                            newActiveP = transParas[i];
+                        } else {
+                            break; // Do transcript đã xếp theo thời gian, nếu t lớn hơn thời gian hiện tại thì dừng vòng lặp sớm
+                        }
+                    }
+                    
+                    // CHỈ tác động vào DOM (đổi màu, cuộn) khi dòng text thực sự chuyển sang câu mới
+                    if (newActiveP && newActiveP !== window.activeFocusTransP) {
+                        // Tắt màu dòng cũ
+                        if (window.activeFocusTransP) {
+                            window.activeFocusTransP.classList.remove('active');
+                        }
+                        
+                        // Bật màu dòng mới
+                        newActiveP.classList.add('active');
+                        newActiveP.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // Cập nhật lại mốc
+                        window.activeFocusTransP = newActiveP;
+                    }
+                }
+            }
+        });
+        
+        audio.addEventListener('loadedmetadata', () => {
+            const modal = document.getElementById('focus-modal');
+            if (modal && !modal.classList.contains('hidden')) window.updateFocusSliderBounds();
+        });
+    }
+
+    // Bắt sự kiện thả chuột trong Focus Mode để đồng bộ hiệu ứng bóng mờ (Used) lập tức
+    const focusArea = document.getElementById('focus-content-area');
+    if (focusArea) {
+        focusArea.addEventListener('drop', () => setTimeout(window.syncFocusPoolState, 50));
+        focusArea.addEventListener('click', (e) => {
+            if (e.target.closest('.drop-zone')) setTimeout(window.syncFocusPoolState, 50);
+        });
+    }
+});
+    </script>
+	
+	<!-- Analysis Modal -->
+<div id="analysis-modal" class="hidden fixed inset-0 bg-black/50 z-[99999] flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-[800px] max-w-[95%] max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="p-5 md:p-6 border-b border-gray-100 flex justify-between items-start bg-slate-50">
+            <div id="analysis-header-content" class="flex-1"></div>
+            <button onclick="closeAnalysisModal()" class="text-gray-400 hover:text-red-500 transition ml-4 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm border border-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <div class="p-5 md:p-6 overflow-y-auto flex-1 bg-white" id="analysis-body-content">
+            <!-- Nội dung vocab sẽ được render tại đây -->
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+    
